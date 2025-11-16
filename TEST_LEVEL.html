@@ -5,6 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Nivel 3</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="stylesheet" href="Niveles_style.css">
     <style>
         body {
@@ -39,7 +40,16 @@
         <button class="Opciones-button opcion-item hidden" onclick="location.href='index.html';">Salir</button>
         <hr class="opcion-item hidden">
         <button class="Opciones-button opcion-item hidden">Reiniciar</button>
+
+        <div class="Camara_coords">
+            <div>X: <span id="Camara_X_Pos">AAAA</span></div>
+            <div>Y: <span id="Camara_Y_Pos">AAAA</span></div>
+            <div>Z: <span id="Camara_Z_Pos">AAAA</span></div>
+        </div>
+
     </div>
+
+    
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -61,8 +71,12 @@
 
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87ceeb);
+
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 8, 25);
+        camera.position.set(0, 8, 80);
+
+
+
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
@@ -129,6 +143,9 @@
         */
 
         let Jugador1;
+        let JugadorPosX;
+        let JugadorPosY;
+        let JugadorPosZ;
         loader.load('Personaje/personajeee.glb', (gltf) => {
             const model = gltf.scene;
             Jugador1 = gltf.scene;
@@ -150,26 +167,50 @@
             // ArrowLeft
             if (e.keyCode === 37) {
                 Jugador1.position.x = Jugador1.position.x - 1;
+                JugadorPosX = Jugador1.position.x;
             }
 
             // ArrowRight
             if (e.keyCode === 39) {
                 Jugador1.position.x = Jugador1.position.x + 1;
+                JugadorPosX = Jugador1.position.x;
             }
 
             // Arrow ATRAS
             if (e.keyCode === 38) {
                 Jugador1.position.z = Jugador1.position.z - 1;
+                JugadorPosZ = Jugador1.position.z;
             }
 
             // Arrow ADELANTE
             if (e.keyCode === 40) {
                 Jugador1.position.z = Jugador1.position.z + 1;
+                JugadorPosZ = Jugador1.position.z;
             }
+
+            //JugadorPosX = Jugador1.position.x;
+            //JugadorPosY = Jugador1.position.y;
+            //JugadorPosZ = Jugador1.position.z;
+
+            
 
 
         };
         
+        function CamaraPos_Draw(){
+            let X_Pos = document.getElementById("Camara_X_Pos");
+            let Y_Pos = document.getElementById("Camara_Y_Pos");
+            let Z_Pos = document.getElementById("Camara_Z_Pos");
+
+            
+
+            X_Pos.innerHTML = JugadorPosX;
+            Y_Pos.innerHTML = JugadorPosY;
+            Z_Pos.innerHTML = JugadorPosZ;
+
+            
+        }
+        CamaraPos_Draw();
 
         function animate() {
             requestAnimationFrame(animate);
