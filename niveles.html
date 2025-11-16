@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Niveles Puzzlos</title>
+    <link rel="stylesheet" href="Niveles_style.css">
+</head>
+<body id="Body_nivel1">
+    <i class="Cofre_Clase"></i>
+
+    <div class="Opciones-container">
+        <img id="Menu_icono" src="3 rayas.png" alt="Icono de Menú" width="50px" height="50px">
+        <div class="opcion-item volume-control hidden">
+            <label for="volume-slider">Volumen</label>
+            <input type="range" id="volume-slider" min="0" max="100" value="100">
+        </div>
+        <div class="opcion-item checkbox-control hidden">
+            <span>Música</span>
+            <label class="switch">
+                <input type="checkbox" checked>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden">Puntuaciones</button>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden" onclick="location.href='index.html#achievements';">Logros</button>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden">Guardar Partida</button>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden" onclick="location.href='index.html';">Salir</button>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden">Reiniciar</button>
+    </div>
+
+    <div id="game-elements"> 
+        <h1>Puzzlos</h1>
+        <div class="menu-container">
+            <div class="level-selector">
+                <img id="arrow_icon_l" src="right_arrow.png" alt="Flecha Izquierda" width="50px" height="50px">
+                <button id="levelButton" class="menu-button">Nivel 1</button>
+                <img id="arrow_icon_r" src="right_arrow.png" alt="Flecha Derecha" width="50px" height="50px">
+            </div>
+        </div>
+    </div>
+
+    <div id="game-over-screen" class="hidden"> 
+        <div class="game-over-content">
+            <h1>Game Over</h1>
+            <div class="game-over-buttons">
+                <button id="playAgainButton" class="menu-button">Jugar de nuevo</button>
+                <button class="menu-button" onclick="location.href='index.html';">Salir</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="level-complete-screen" class="hidden"> 
+        <div class="game-over-content">
+            <h1>Nivel Completado</h1>
+            
+            <div class="PublicarPuntaje">
+            
+                <div class="AreaPuntaje">
+                    <h2>Tu puntaje fue "58900"</h2>
+                    <h3>¡Hay que compartirlo! Ingresa un <span class="AreaPuntaje_Nombre">Nombre</span></h3>
+                    
+                    <div class="AreaPuntaje_Mensaje">
+                        "Soy <input type="text" name="Usuario_Nombre" id="Usuario_Nombre" value="Usuario_Nombre" /> y mi puntaje fué
+                        <span id="Usuario_Calificacion">[58900]</span>.
+                        <span class="AreaPuntaje_Acentuar">¿Crees poder derrotarme?</span> ¡Juega Ya!"
+                    </div>
+                    <br>
+                
+                    <!-- <button type="button">Compartir Puntaje</button> -->
+                    <!-- <input type="button" value="Compartir Puntaje" onclick="EnviarPuntaje();"> -->
+                
+                    <img class="AreaPuntaje_Facebook" src="/facebookIcon.webp" alt=""><button id="postButton">Compartir Puntaje</button>
+                </div>
+            
+            </div>
+            
+            
+
+
+
+            <div class="game-over-buttons">
+                <button id="nextLevelButton" class="menu-button">Siguiente Nivel</button>
+                <button class="menu-button" onclick="location.href='index.html';">Salir</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const toggleButton = document.getElementById('Menu_icono');
+        const targetElements = document.querySelectorAll('.opcion-item');
+
+        toggleButton.addEventListener('click', () => {
+            targetElements.forEach(element => {
+                element.classList.toggle('hidden');
+            });
+        });
+    });
+
+    const body = document.body;
+    const levelButton = document.getElementById('levelButton');
+    const arrowLeft = document.getElementById('arrow_icon_l');
+    const arrowRight = document.getElementById('arrow_icon_r');
+    const gameElements = document.getElementById('game-elements');
+    const gameOverScreen = document.getElementById('game-over-screen');
+    const levelCompleteScreen = document.getElementById('level-complete-screen');
+    const playAgainButton = document.getElementById('playAgainButton');
+    const nextLevelButton = document.getElementById('nextLevelButton');
+
+    const levels = [
+        { id: 'Body_nivel1', text: 'Nivel 1' },
+        { id: 'Body_nivel2', text: 'Nivel 2' },
+        { id: 'Body_nivel3', text: 'Nivel 3' }
+    ];
+    let currentLevel = 0; 
+    function updateLevelView() {
+        const levelData = levels[currentLevel];
+        body.id = levelData.id; 
+        levelButton.textContent = levelData.text; 
+    }
+    arrowRight.addEventListener('click', () => {
+        currentLevel = (currentLevel + 1) % levels.length;
+        updateLevelView();
+    });
+    arrowLeft.addEventListener('click', () => {
+        currentLevel = (currentLevel - 1 + levels.length) % levels.length;
+        updateLevelView();
+    });
+
+    levelButton.addEventListener('click', () => {
+        if (currentLevel === 0) { 
+            gameElements.classList.add('hidden');
+            gameOverScreen.classList.remove('hidden');
+            body.classList.add('game-over-background');
+        } else if (currentLevel === 1) { 
+            gameElements.classList.add('hidden');
+            levelCompleteScreen.classList.remove('hidden');
+            body.classList.add('level-complete-background');
+        } else if (currentLevel === 2) { 
+            
+            location.href = 'level3.html';
+        } else {
+            
+            alert('¡Este nivel estará disponible próximamente!');
+        }
+    });
+    
+
+    playAgainButton.addEventListener('click', () => {
+        gameOverScreen.classList.add('hidden');
+        gameElements.classList.remove('hidden');
+        body.classList.remove('game-over-background');
+        currentLevel = 0;
+        updateLevelView();
+    });
+    nextLevelButton.addEventListener('click', () => {
+        levelCompleteScreen.classList.add('hidden');
+        gameElements.classList.remove('hidden');
+        body.classList.remove('level-complete-background');
+        currentLevel = 2; 
+        updateLevelView();
+    });
+
+
+    window.fbAsyncInit = function () {
+            FB.init({
+                appId: '25355876417352914',
+                xfbml: true,
+                version: 'v24.0'
+            });
+            const postButton = document.getElementById('postButton');
+            //const postButton = document.getElementById('nextLevelButton');
+
+            postButton.addEventListener('click', async () => {
+
+                var Mensaje_Texto = "Soy [JUGADOR] y mi puntaje fué [PUNTOS]. Crees poder derrotarme? ¡Juega Ya!";
+                let EnviarPuntuacion_Bool = false;
+                //console.log("Enviaste la calificacion");
+
+                document.getElementById("Usuario_Calificacion").textContent="[58900]";
+
+            
+                //var Usuario = "Usuario_Nombre";
+                var Usuario = document.getElementById("Usuario_Nombre").value;
+
+
+                //Usuario_Calificacion
+                //var Calificacion = "58900";
+                var Calificacion = document.getElementById("Usuario_Calificacion").textContent;
+
+                Mensaje_Texto = "Soy " + Usuario + " y mi puntaje fué: " + Calificacion + ". Crees poder derrotarme? ¡Juega Ya!"
+
+                EnviarPuntuacion_Bool = true;
+
+                console.log(Mensaje_Texto);
+
+
+
+
+
+
+
+                FB.api('841475139049841/feed', 'POST',
+                {
+                    message: Mensaje_Texto,
+                    access_token: "EAALR4D7NRPABPjxdWrEJ5MpkLAqamIoFiJ5dZConJQZCdZAo2gstxKSupcjsfxV94uaqRT7C823m5kNySsZBqol124ly9pkTFwHykKNZAYQyZA4waQ8pME3t7nGCUAqOqZBBRr66LMKwUKYhIuXl2ATkJuK4yHpn7qiKDHj8qtWlZCbMeNkJ6JhndRIfpy5a3jHwKYnINhuOvCBXZA3KUfCBoqP3f7CCCa7qjWqlB38A9TmUZD"},
+                    function (response) {
+                    //console.log(response);
+                    if(response && !response.error){
+                        console.log(response);
+                    }
+
+
+                });
+            });
+
+
+
+            // FB.api('792867170236896/posts', 'GET',
+            // {access_token: "EAFoVCQbTNNIBPtZCsZB4mJjNpDloV5ZBAczf92Ayp5q6yZA56pZBawuIannRC65BoKQoAESf4O9u97xx6h7ukXbXTQhIlTnWKa2JZA5mZCihBd6jrpYyOM3fLYkSHPDWSrfT6o3l5weJd4VNo9jZAnYA6NnxTqVe1Mj9ZBwcMZC5MGsqisjXlKpcyXUBgeZBRs9BrxV6xZC0DprBRnHMb12bWvnZCBcR2ZCFtqNUXGw4Xx3IhVbKy9jFLtq2n454ZALmMFYTTEvY1ZBO9Sejz2ZAiepx4"},
+            // function (response) {
+            //     //console.log(response);
+            //     if(response && !response.error){
+            //         console.log(response);
+            //     }
+
+
+            // });
+            
+            //document.getElementById("Usuario_Nombre").value;
+
+            /*
+            
+            FB.api('841475139049841/feed', 'POST',
+                {
+                message: 'aaaaaaaa',
+                access_token: "EAALR4D7NRPABPk9jMZBK6k12c1AhFDoSTJZCnIWtcIteEZAkbhBuvbx9hp34ANXe1HPFxEZAt2WBCaFer91VDY1ZAZCqZBKoTtXgQfD8UF8naxRClu3W2XvgY02F9HjGZBTeHbU5WFxdUIy46aHjHOiqPnEXf2I1W7q4V9poqv7Pp3viFClSgf8XcOZCi9GKfgUwbAvB6p07p09XGr2z1QGxT0fzKBT6Fpxa34L2ZAwMMhg3YZD"},
+                function (response) {
+                //console.log(response);
+                if(response && !response.error){
+                    console.log(response);
+                }
+
+
+            });
+            
+            */
+
+            
+
+
+            /*
+            
+            if(EnviarPuntuacion_Bool == true){
+                console.log("se logro");
+
+                FB.api('841475139049841/feed', 'POST',
+            {
+                message: Mensaje_Texto,
+                access_token: "EAALR4D7NRPABPjXv3lRqdkH5rzDZCM9ZBjfyXgyotITIb1yRoPj85FBfMkj4RiLUIAXjQnQhWzzLuDiOsP1tvMZACQRM6LavQK9YRd0o0hPVvQ78PWJnp5G4tXOhrgIiCLjSZBNZB2nXwASJQVvoB88STpaiWCrUV7ZCFdzROYrezHSgkwSXk6FGoWV2WjhZBSmoBqSMl7zyXR70kuyEj5z9cofVMCW6oIFdwbm16Xz"},
+                function (response) {
+                //console.log(response);
+                if(response && !response.error){
+                    console.log(response);
+                }
+
+
+            });
+            }
+            
+            */
+            
+        };
+</script>
+<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+
+</body>
+</html>

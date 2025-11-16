@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puzzlos</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <i class="Cofre_Clase"></i>
+    <div class="Opciones-container">
+        <img id="Menu_icono" src="3 rayas.png" alt="Icono de Menú" width="50px" height="50px">
+        <div class="opcion-item volume-control hidden">
+            <label for="volume-slider">Volumen</label>
+            <input type="range" id="volume-slider" min="0" max="100" value="75">
+        </div>
+        <div class="opcion-item checkbox-control hidden">
+            <span>Música</span>
+            <label class="switch">
+                <input type="checkbox" checked>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden">Puntuaciones</button>
+        <hr class="opcion-item hidden">
+        <button id="achievementsButton" class="Opciones-button opcion-item hidden">Logros</button>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden">Guardar Partida</button>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden" onclick="location.href='index.html';">Salir</button>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden">Reiniciar</button>
+    </div>
+
+    <div class="menu-container">
+        <h1>Puzzlos</h1>
+        <div id="main-menu-buttons">
+            <button class="menu-button" onclick="location.href='niveles.html';">Jugar Individual</button>
+            <button class="menu-button" onclick="location.href='niveles.html';">Jugar Multijugador</button>
+        </div>
+        <div id="achievements-screen" class="hidden">
+            <div class="achievements-grid">
+                <div class="achievement-box"><img class="Logros-img" src="totem.png" alt="Nivel 1"></div>
+                <div class="achievement-box"><img class="Logros-img" src="totem.png" alt="Nivel 2"></div>
+                <div class="achievement-box"><img class="Logros-img" src="totem.png" alt="Nivel 3"></div>
+            </div>
+            <button id="back-to-menu-button" class="menu-button">Regresar</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggleButton = document.getElementById('Menu_icono');
+            const targetElements = document.querySelectorAll('.opcion-item');
+
+            toggleButton.addEventListener('click', () => {
+                targetElements.forEach(element => {
+                    element.classList.toggle('hidden');
+                });
+            });
+
+
+            const achievementsButton = document.getElementById('achievementsButton');
+            const backToMenuButton = document.getElementById('back-to-menu-button');
+            const mainMenu = document.getElementById('main-menu-buttons');
+            const achievementsScreen = document.getElementById('achievements-screen');
+
+
+            achievementsButton.addEventListener('click', () => {
+                mainMenu.classList.add('hidden');
+                achievementsScreen.classList.remove('hidden');
+                targetElements.forEach(element => element.classList.add('hidden'));
+            });
+
+
+            backToMenuButton.addEventListener('click', () => {
+                achievementsScreen.classList.add('hidden');
+                mainMenu.classList.remove('hidden');
+                history.pushState("", document.title, window.location.pathname + window.location.search);
+            });
+
+
+            if (window.location.hash === '#achievements') {
+                mainMenu.classList.add('hidden');
+                achievementsScreen.classList.remove('hidden');
+            }
+
+        });
+    </script>
+</body>
+</html>

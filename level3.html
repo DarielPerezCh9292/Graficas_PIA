@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nivel 3</title>
+    <link rel="stylesheet" href="Niveles_style.css">
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <i class="Cofre_Clase"></i>
+    <div class="Opciones-container">
+        <img id="Menu_icono" src="3 rayas.png" alt="Icono de Menú" width="50px" height="50px">
+        <div class="opcion-item volume-control hidden">
+            <label for="volume-slider">Volumen</label>
+            <input type="range" id="volume-slider" min="0" max="100" value="75">
+        </div>
+        <div class="opcion-item checkbox-control hidden">
+            <span>Música</span>
+            <label class="switch">
+                <input type="checkbox" checked>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden">Puntuaciones</button>
+        <hr class="opcion-item hidden">
+        <button id="achievementsButton" class="Opciones-button opcion-item hidden" onclick="location.href='index.html#achievements';">Logros</button>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden">Guardar Partida</button>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden" onclick="location.href='index.html';">Salir</button>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden">Reiniciar</button>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+          const toggleButton = document.getElementById('Menu_icono');
+          const targetElements = document.querySelectorAll('.opcion-item');
+
+          toggleButton.addEventListener('click', () => {
+              targetElements.forEach(element => {
+                  element.classList.toggle('hidden');
+              });
+          });
+      });
+    </script>
+
+    <script type="module">
+      import * as THREE from "./three.module.js";
+      import { OrbitControls } from "./OrbitControls.js";
+      import { GLTFLoader } from "./GLTFLoader.js";
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x87ceeb);
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 8, 25);
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      document.body.appendChild(renderer.domElement);
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+      scene.add(ambientLight);
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
+      directionalLight.position.set(10, 15, 5);
+      directionalLight.castShadow = true;
+      scene.add(directionalLight);
+
+      const controls = new OrbitControls(camera, renderer.domElement);
+      const plane = new THREE.Mesh(
+          new THREE.PlaneGeometry(50, 50),
+          new THREE.MeshStandardMaterial({ color: "#8B4513" })
+      );
+      plane.rotation.x = -Math.PI / 2;
+      plane.receiveShadow = true;
+      scene.add(plane);
+
+      let spiderMixer, snakeMixer, esqueletoMixer, personajeMixer;
+      const clock = new THREE.Clock();
+      const loader = new GLTFLoader();
+
+      loader.load('spider/spider.glb', (gltf) => {
+          const model = gltf.scene;
+          model.traverse(child => { if (child.isMesh) child.castShadow = true; });
+          model.scale.set(10, 10, 10);
+          model.position.set(10, 10, 0);
+          scene.add(model);
+          if (gltf.animations.length) {
+              spiderMixer = new THREE.AnimationMixer(model);
+              spiderMixer.clipAction(gltf.animations[0]).play();
+          }
+      }, undefined, (error) => console.error(error));
+
+      loader.load('snake/source/snake.glb', (gltf) => {
+          const model = gltf.scene;
+          model.traverse(child => { if (child.isMesh) child.castShadow = true; });
+          model.scale.set(0.2, 0.2, 0.2);
+          model.position.set(-10, 0, 0);
+          scene.add(model);
+          if (gltf.animations.length) {
+              snakeMixer = new THREE.AnimationMixer(model);
+              snakeMixer.clipAction(gltf.animations[0]).play();
+          }
+      }, undefined, (error) => console.error(error));
+
+      loader.load('Esqueleto/esqueletooo.glb', (gltf) => {
+          const model = gltf.scene;
+          model.traverse(child => { if (child.isMesh) child.castShadow = true; });
+          model.scale.set(2, 2, 2);
+          model.position.set(0, 0, -10);
+          scene.add(model);
+          if (gltf.animations.length) {
+              esqueletoMixer = new THREE.AnimationMixer(model);
+              esqueletoMixer.clipAction(gltf.animations[0]).play();
+          }
+      }, undefined, (error) => console.error(error));
+
+      loader.load('Personaje/personajeee.glb', (gltf) => {
+          const model = gltf.scene;
+          model.traverse(child => { if (child.isMesh) child.castShadow = true; });
+          model.scale.set(2, 2, 2);
+          model.position.set(0, 0, 10);
+          scene.add(model);
+          if (gltf.animations.length) {
+              personajeMixer = new THREE.AnimationMixer(model);
+              personajeMixer.clipAction(gltf.animations[0]).play();
+          }
+      }, undefined, (error) => console.error(error));
+
+      function animate() {
+          requestAnimationFrame(animate);
+          const delta = clock.getDelta();
+          if (spiderMixer) spiderMixer.update(delta);
+          if (snakeMixer) snakeMixer.update(delta);
+          if (esqueletoMixer) esqueletoMixer.update(delta);
+          if (personajeMixer) personajeMixer.update(delta);
+          
+          renderer.render(scene, camera);
+      }
+      animate();
+    </script>
+  </body>
+</html>
