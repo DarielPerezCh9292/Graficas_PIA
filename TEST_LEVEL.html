@@ -156,6 +156,7 @@
         let JugadorPosX;
         let JugadorPosY;
         let JugadorPosZ;
+        let Jugador1_Colision = new THREE.Box3();
         loader.load('Personaje/personajeee.glb', (gltf) => {
             const model = gltf.scene;
             Jugador1 = gltf.scene;
@@ -164,11 +165,17 @@
             Jugador1.scale.set(2, 2, 2);
             Jugador1.position.set(0, 0, 50);
             scene.add(Jugador1);
+            Jugador1_Colision.setFromObject(Jugador1);
             if (gltf.animations.length) {
                 Jugador1_Mixer = new THREE.AnimationMixer(Jugador1);
                 Jugador1_Mixer.clipAction(gltf.animations[0]).play();
             }
         }, undefined, (error) => console.error(error));
+        
+        //
+
+
+
 
         const Wall1_Geometry = new THREE.BoxGeometry(2, 20, 50);
         const Wall1_Material = new THREE.MeshPhongMaterial({ color: "aqua" });
@@ -234,6 +241,14 @@
         Wall7_Puerta2_BoundBox.setFromObject(Wall7_Puerta2);
         scene.add(Wall7_Puerta2);
 
+        let Cuarto_Terminado = false;
+
+
+
+
+
+
+
         //controls.target.set(.5, .5, .5)
         controls.target.set(0, 0, 0);
         controls.update();
@@ -246,7 +261,7 @@
             if (e.keyCode === 37) {
                 Jugador1.position.x = Jugador1.position.x - 1;
                 //console.log(Jugador1.position.x);
-                JugadorPosX = Jugador1.position.x;
+                JugadorPosX = Jugador1.position.x;                
             }
 
             // ArrowRight
@@ -259,12 +274,16 @@
             if (e.keyCode === 38) {
                 Jugador1.position.z = Jugador1.position.z - 1;
                 JugadorPosZ = Jugador1.position.z;
+
+                Cuarto_Terminado = true;
             }
 
             // Arrow ADELANTE
             if (e.keyCode === 40) {
                 Jugador1.position.z = Jugador1.position.z + 1;
                 JugadorPosZ = Jugador1.position.z;
+
+                Cuarto_Terminado = false;
             }
 
             //JugadorPosX = Jugador1.position.x;
@@ -291,6 +310,60 @@
         }
         //CamaraPos_Draw();
 
+
+        function checkCollisions() {
+            
+            
+            if(Jugador1_Colision.containsBox(Wall1_BoundBox)){
+            
+                Wall1.material.color = new THREE.Color("black");
+            }
+            else{
+            
+                Wall1.material.color = new THREE.Color(0xffff00);
+            }
+
+            /*if(cube2BB.intersectsBox(NewColision_2)){
+            //particles.position.set(0, 0, 0);
+            NewObject_2.material.color = new THREE.Color("black");
+            }
+            else{
+            //particles.position.set(0, -10, 0);
+            NewObject_2.material.color = new THREE.Color(0xF54927);
+            }
+
+
+            if(cube2BB.intersectsBox(NewColision_3)){
+            //particles.position.set(3, 0, 0);
+            NewObject_3.material.color = new THREE.Color("black");
+            }
+            else{
+            //particles.position.set(0, -10, 0);
+            NewObject_3.material.color = new THREE.Color(0x3527F5);
+            }*/
+
+
+            /*if (cube2BB.containsBox(cube1BB)) {
+            cube1.scale.y = 2;
+            } else {
+            cube1.scale.y = 1;
+            }
+
+            if (cube2BB.intersectsBox(cube1BB)) {
+            cube1.material.color = new THREE.Color("red");
+            } else {
+            cube1.material.color = new THREE.Color("aqua");
+            }
+
+            if (cube2BB.intersectsSphere(sphereBS)) {
+            sphere.material.wireframe = true;
+            } else {
+            sphere.material.wireframe = false;
+            }*/
+        }
+
+        checkCollisions();
+
         function animate() {
             requestAnimationFrame(animate);
             const delta = clock.getDelta();
@@ -298,6 +371,15 @@
             //if (snakeMixer) snakeMixer.update(delta);
             //if (esqueletoMixer) esqueletoMixer.update(delta);
             if (Jugador1_Mixer) Jugador1_Mixer.update(delta);
+
+            if(Cuarto_Terminado == true){
+                Wall3_Puerta1.position.y = -20;
+                Wall7_Puerta2.position.y = -20;
+            }
+            else{
+                Wall3_Puerta1.position.y = 10;
+                Wall7_Puerta2.position.y = 10;
+            }
 
             renderer.render(scene, camera);
         }
