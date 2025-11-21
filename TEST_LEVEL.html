@@ -75,14 +75,18 @@
         import { OrbitControls } from "./OrbitControls.js";
         import { GLTFLoader } from "./GLTFLoader.js";
         
+        
+
         class Cuartos{
             
             
-            constructor(positionX, positionY, positionZ, Player_BB){
+            constructor(positionX, positionY, positionZ, Player_BB, mat_Paredes, mat_Puertas){
 
                 this.positionX = positionX;
                 this.positionY = positionY;
                 this.positionZ = positionZ;
+                this.mat_Paredes = mat_Paredes;
+                this.mat_Puertas = mat_Puertas;
 
                 this.Cuarto_Terminado = false;
 
@@ -90,51 +94,52 @@
 
                 this.Player_Temp_BB = Player_BB;
 
+                this.Paredes_Material = new THREE.MeshPhongMaterial();
+                //this.Paredes_Textura = new THREE.TextureLoader().load("./uv_texture.jpg");
+                this.Paredes_Textura = new THREE.TextureLoader().load(this.mat_Paredes);
+                this.Paredes_Material.map = this.Paredes_Textura;
+
+                this.Puertas_Material = new THREE.MeshPhongMaterial();
+                //this.Puertas_Textura = new THREE.TextureLoader().load("./temp_puerta.jpg");
+                this.Puertas_Textura = new THREE.TextureLoader().load(this.mat_Puertas);
+                this.Puertas_Material.map = this.Puertas_Textura;
+
                 this.Wall1_Geometry = new THREE.BoxGeometry(2, 20, 50);
-                this.Wall1_Material = new THREE.MeshPhongMaterial({ color: "aqua" });
-                this.Wall1 = new THREE.Mesh(this.Wall1_Geometry, this.Wall1_Material);
+                this.Wall1 = new THREE.Mesh(this.Wall1_Geometry, this.Paredes_Material);
                 this.Wall1_BoundBox = new THREE.Box3();
                 
-
                 this.Wall5_Geometry = new THREE.BoxGeometry(2, 20, 50);
-                this.Wall5_Material = new THREE.MeshPhongMaterial({ color: "aqua" });
-                this.Wall5 = new THREE.Mesh(this.Wall5_Geometry, this.Wall5_Material);
+                this.Wall5 = new THREE.Mesh(this.Wall5_Geometry, this.Paredes_Material);
                 this.Wall5_BoundBox = new THREE.Box3();
                 
 
                 this.Wall2_Geometry = new THREE.BoxGeometry(18, 20, 2);
-                this.Wall2_Material = new THREE.MeshPhongMaterial({ color: "red" });
-                this.Wall2 = new THREE.Mesh(this.Wall2_Geometry, this.Wall2_Material);
+                this.Wall2 = new THREE.Mesh(this.Wall2_Geometry, this.Paredes_Material);
                 this.Wall2_BoundBox = new THREE.Box3();
                 
 
                 this.Wall4_Geometry = new THREE.BoxGeometry(18, 20, 2);
-                this.Wall4_Material = new THREE.MeshPhongMaterial({ color: "red" });
-                this.Wall4 = new THREE.Mesh(this.Wall4_Geometry, this.Wall4_Material);
+                this.Wall4 = new THREE.Mesh(this.Wall4_Geometry, this.Paredes_Material);
                 this.Wall4_BoundBox = new THREE.Box3();
                 
 
                 this.Wall8_Geometry = new THREE.BoxGeometry(18, 20, 2);
-                this.Wall8_Material = new THREE.MeshPhongMaterial({ color: "red" });
-                this.Wall8 = new THREE.Mesh(this.Wall8_Geometry, this.Wall8_Material);
+                this.Wall8 = new THREE.Mesh(this.Wall8_Geometry, this.Paredes_Material);
                 this.Wall8_BoundBox = new THREE.Box3();
                 
 
                 this.Wall6_Geometry = new THREE.BoxGeometry(18, 20, 2);
-                this.Wall6_Material = new THREE.MeshPhongMaterial({ color: "red" });
-                this.Wall6 = new THREE.Mesh(this.Wall6_Geometry, this.Wall6_Material);
+                this.Wall6 = new THREE.Mesh(this.Wall6_Geometry, this.Paredes_Material);
                 this.Wall6_BoundBox = new THREE.Box3();
                 
 
                 this.Wall3_Puerta1_Geometry = new THREE.BoxGeometry(10, 20, 2);
-                this.Wall3_Puerta1_Material = new THREE.MeshPhongMaterial({ color: "white" });
-                this.Wall3_Puerta1 = new THREE.Mesh(this.Wall3_Puerta1_Geometry, this.Wall3_Puerta1_Material);
+                this.Wall3_Puerta1 = new THREE.Mesh(this.Wall3_Puerta1_Geometry, this.Puertas_Material);
                 this.Wall3_Puerta1_BoundBox = new THREE.Box3();
                 
 
                 this.Wall7_Puerta2_Geometry = new THREE.BoxGeometry(10, 20, 2);
-                this.Wall7_Puerta2_Material = new THREE.MeshPhongMaterial({ color: "white" });
-                this.Wall7_Puerta2 = new THREE.Mesh(this.Wall7_Puerta2_Geometry, this.Wall7_Puerta2_Material);
+                this.Wall7_Puerta2 = new THREE.Mesh(this.Wall7_Puerta2_Geometry, this.Puertas_Material);
                 this.Wall7_Puerta2_BoundBox = new THREE.Box3();
                 
 
@@ -330,52 +335,14 @@
 
         //#endregion
         
-        const Habitacion_1 = new Cuartos(0,0,0,Jugador1_BoundBox);
+        const Habitacion_1 = new Cuartos(0,0,0,Jugador1_BoundBox, "./uv_texture.jpg", "./temp_puerta.jpg");
         Habitacion_1.Construir_Cuarto();
         
         controls.target.set(0, 0, 0);
 
         controls.update();
 
-        document.onkeydown = function (e) {
-            console.log(e);
-
-            // ArrowLeft
-            if (e.keyCode === 37) {
-                Jugador1.position.x = Jugador1.position.x - 1;                
-                JugadorPosX = Jugador1.position.x;                
-            }
-
-            // ArrowRight
-            if (e.keyCode === 39) {
-                Jugador1.position.x = Jugador1.position.x + 1;
-                JugadorPosX = Jugador1.position.x;
-            }
-
-            // Arrow ATRAS
-            if (e.keyCode === 38) {
-                Jugador1.position.z = Jugador1.position.z - 1;
-                JugadorPosZ = Jugador1.position.z;
-
-                
-            }
-
-            // Arrow ADELANTE
-            if (e.keyCode === 40) {
-                Jugador1.position.z = Jugador1.position.z + 1;
-                JugadorPosZ = Jugador1.position.z;
-
-                
-            }
-
-            //JugadorPosX = Jugador1.position.x;
-            //JugadorPosY = Jugador1.position.y;
-            //JugadorPosZ = Jugador1.position.z;
-
-            
-
-
-        };
+        
         
         
         
@@ -412,7 +379,10 @@
             
         }
 
-        
+        const keyboard = {};
+        document.addEventListener('keydown', (event) => { keyboard[event.code] = true; });
+        document.addEventListener('keyup', (event) => { keyboard[event.code] = false; });
+
 
         function animate() {
             requestAnimationFrame(animate);
@@ -422,7 +392,28 @@
             Jugador1_BoundBox.getCenter(Jugador1_Posicion_Anterior);
             Jugador1_BoundBox.setFromObject(Jugador1);
 
+            const moveSpeed = 0.25;
             
+            // Forward/Backward movement
+            if (keyboard['KeyW']) {
+                Jugador1.position.z -= moveSpeed;
+            }
+            if (keyboard['KeyS']) {
+                Jugador1.position.z += moveSpeed;
+            }
+
+            // Strafe Left/Right
+            if (keyboard['KeyA']) {
+                Jugador1.position.x -= moveSpeed;
+            }
+            if (keyboard['KeyD']) {
+                Jugador1.position.x += moveSpeed;
+            }
+
+
+
+
+
 
 
             //Jugador1_Posicion_Anterior.copy(Jugador1.position);
@@ -432,7 +423,7 @@
             Habitacion_1.Colisiones();
 
             if (Habitacion_1.Colision_Con_Jugador == true){
-                Habitacion_1.Wall1.material.color = new THREE.Color("black");
+                //Habitacion_1.Wall1.material.color = new THREE.Color("black");
                 
                 Jugador1.position.copy(Jugador1_Posicion_Anterior.position);
             }
