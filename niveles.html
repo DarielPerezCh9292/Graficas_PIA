@@ -136,16 +136,21 @@
 
     levelButton.addEventListener('click', () => {
         if (currentLevel === 0) { 
-            gameElements.classList.add('hidden');
-            gameOverScreen.classList.remove('hidden');
-            body.classList.add('game-over-background');
+            //gameElements.classList.add('hidden');
+            //gameOverScreen.classList.remove('hidden');
+            //body.classList.add('game-over-background');
+
+            location.href = 'new_LEVEL_1.html';
+
         } else if (currentLevel === 1) { 
-            gameElements.classList.add('hidden');
-            levelCompleteScreen.classList.remove('hidden');
-            body.classList.add('level-complete-background');
+            //gameElements.classList.add('hidden');
+            //levelCompleteScreen.classList.remove('hidden');
+            //body.classList.add('level-complete-background');
+
+            location.href = 'new_LEVEL_2.html';
         } else if (currentLevel === 2) { 
             
-            location.href = 'level3.html';
+            location.href = 'new_LEVEL_3.html';
         } else {
             
             alert('¡Este nivel estará disponible próximamente!');
@@ -153,133 +158,12 @@
     });
     
 
-    playAgainButton.addEventListener('click', () => {
-        gameOverScreen.classList.add('hidden');
-        gameElements.classList.remove('hidden');
-        body.classList.remove('game-over-background');
-        currentLevel = 0;
-        updateLevelView();
-    });
-    nextLevelButton.addEventListener('click', () => {
-        levelCompleteScreen.classList.add('hidden');
-        gameElements.classList.remove('hidden');
-        body.classList.remove('level-complete-background');
-        currentLevel = 2; 
-        updateLevelView();
-    });
+    
 
 
-    window.fbAsyncInit = function () {
-            FB.init({
-                appId: '25355876417352914',
-                xfbml: true,
-                version: 'v24.0'
-            });
-            const postButton = document.getElementById('postButton');
-            //const postButton = document.getElementById('nextLevelButton');
-
-            postButton.addEventListener('click', async () => {
-
-                var Mensaje_Texto = "Soy [JUGADOR] y mi puntaje fué [PUNTOS]. Crees poder derrotarme? ¡Juega Ya!";
-                let EnviarPuntuacion_Bool = false;
-                //console.log("Enviaste la calificacion");
-
-                document.getElementById("Usuario_Calificacion").textContent="[58900]";
-
-            
-                //var Usuario = "Usuario_Nombre";
-                var Usuario = document.getElementById("Usuario_Nombre").value;
-
-
-                //Usuario_Calificacion
-                //var Calificacion = "58900";
-                var Calificacion = document.getElementById("Usuario_Calificacion").textContent;
-
-                Mensaje_Texto = "Soy " + Usuario + " y mi puntaje fué: " + Calificacion + ". Crees poder derrotarme? ¡Juega Ya!"
-
-                EnviarPuntuacion_Bool = true;
-
-                console.log(Mensaje_Texto);
-
-
-
-
-
-
-
-                FB.api('841475139049841/feed', 'POST',
-                {
-                    message: Mensaje_Texto,
-                    access_token: "EAALR4D7NRPABPjxdWrEJ5MpkLAqamIoFiJ5dZConJQZCdZAo2gstxKSupcjsfxV94uaqRT7C823m5kNySsZBqol124ly9pkTFwHykKNZAYQyZA4waQ8pME3t7nGCUAqOqZBBRr66LMKwUKYhIuXl2ATkJuK4yHpn7qiKDHj8qtWlZCbMeNkJ6JhndRIfpy5a3jHwKYnINhuOvCBXZA3KUfCBoqP3f7CCCa7qjWqlB38A9TmUZD"},
-                    function (response) {
-                    //console.log(response);
-                    if(response && !response.error){
-                        console.log(response);
-                    }
-
-
-                });
-            });
-
-
-
-            // FB.api('792867170236896/posts', 'GET',
-            // {access_token: "EAFoVCQbTNNIBPtZCsZB4mJjNpDloV5ZBAczf92Ayp5q6yZA56pZBawuIannRC65BoKQoAESf4O9u97xx6h7ukXbXTQhIlTnWKa2JZA5mZCihBd6jrpYyOM3fLYkSHPDWSrfT6o3l5weJd4VNo9jZAnYA6NnxTqVe1Mj9ZBwcMZC5MGsqisjXlKpcyXUBgeZBRs9BrxV6xZC0DprBRnHMb12bWvnZCBcR2ZCFtqNUXGw4Xx3IhVbKy9jFLtq2n454ZALmMFYTTEvY1ZBO9Sejz2ZAiepx4"},
-            // function (response) {
-            //     //console.log(response);
-            //     if(response && !response.error){
-            //         console.log(response);
-            //     }
-
-
-            // });
-            
-            //document.getElementById("Usuario_Nombre").value;
-
-            /*
-            
-            FB.api('841475139049841/feed', 'POST',
-                {
-                message: 'aaaaaaaa',
-                access_token: "EAALR4D7NRPABPk9jMZBK6k12c1AhFDoSTJZCnIWtcIteEZAkbhBuvbx9hp34ANXe1HPFxEZAt2WBCaFer91VDY1ZAZCqZBKoTtXgQfD8UF8naxRClu3W2XvgY02F9HjGZBTeHbU5WFxdUIy46aHjHOiqPnEXf2I1W7q4V9poqv7Pp3viFClSgf8XcOZCi9GKfgUwbAvB6p07p09XGr2z1QGxT0fzKBT6Fpxa34L2ZAwMMhg3YZD"},
-                function (response) {
-                //console.log(response);
-                if(response && !response.error){
-                    console.log(response);
-                }
-
-
-            });
-            
-            */
-
-            
-
-
-            /*
-            
-            if(EnviarPuntuacion_Bool == true){
-                console.log("se logro");
-
-                FB.api('841475139049841/feed', 'POST',
-            {
-                message: Mensaje_Texto,
-                access_token: "EAALR4D7NRPABPjXv3lRqdkH5rzDZCM9ZBjfyXgyotITIb1yRoPj85FBfMkj4RiLUIAXjQnQhWzzLuDiOsP1tvMZACQRM6LavQK9YRd0o0hPVvQ78PWJnp5G4tXOhrgIiCLjSZBNZB2nXwASJQVvoB88STpaiWCrUV7ZCFdzROYrezHSgkwSXk6FGoWV2WjhZBSmoBqSMl7zyXR70kuyEj5z9cofVMCW6oIFdwbm16Xz"},
-                function (response) {
-                //console.log(response);
-                if(response && !response.error){
-                    console.log(response);
-                }
-
-
-            });
-            }
-            
-            */
-            
-        };
+    
 </script>
-<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+
 
 </body>
 </html>

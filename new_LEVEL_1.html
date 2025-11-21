@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Nivel 3</title>
+    <title>Nivel 1</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="stylesheet" href="Niveles_style.css">
     <style>
@@ -64,7 +64,10 @@
     </script>
 
     <script type="module">
-        
+        function Set_NivelActual() {
+            var VAR_Nivel_Actual = 1;
+            localStorage.setItem("Nivel_Actual",VAR_Nivel_Actual);
+        }
         
         
         import * as THREE from "./three.module.js";
@@ -318,8 +321,10 @@
         //#endregion
         
 
-        //#region Zona Victoria
-        let Nivel_Ganado = false;
+        //#region FIN DEL NIVEL
+        let FIN_DEL_NIVEL = false;
+        let Jugador_Victoria = false;
+        let Jugador_Derrota = false;
 
         const Zona_Victoria_Geometry = new THREE.BoxGeometry(10, 5, 10);
         const Zona_Victoria_Material = new THREE.MeshPhongMaterial({ color: "white" });
@@ -338,7 +343,7 @@
 
         controls.update();
 
-        
+        let Cambio_De_Mapa = false;
         
         
         
@@ -353,10 +358,12 @@
 
             
             
-
+            //Jugador Ganó Nivel
             if(Zona_Victoria_BoundBox.intersectsBox(Jugador1_BoundBox)){
             
                 Zona_Victoria.material.color = new THREE.Color("black");
+                FIN_DEL_NIVEL = true;
+                Jugador_Victoria = true;
                 
                 
             }
@@ -375,73 +382,125 @@
             
         }
 
+
+        function Nivel_Fue_Ganado(){
+            
+            //location.href = 'niveles.html';
+            if(Cambio_De_Mapa == false){
+                //location.href = 'niveles.html';
+                location.href = 'GAMEOVER_win.html';
+                
+                console.log("Cambio de Nivel");
+                Cambio_De_Mapa = true;
+            }
+        }
+
+        function Nivel_Fue_Perdido(){
+            
+            //location.href = 'index.html';
+            if(Cambio_De_Mapa == false){
+                location.href = 'GAMEOVER_LOSE.html';
+                console.log("Cambio de Nivel");
+                Cambio_De_Mapa = true;
+            }
+        }
+
         const keyboard = {};
         document.addEventListener('keydown', (event) => { keyboard[event.code] = true; });
         document.addEventListener('keyup', (event) => { keyboard[event.code] = false; });
 
+        
 
         function animate() {
             requestAnimationFrame(animate);
 
             const delta = clock.getDelta();
             
-            Jugador1_BoundBox.getCenter(Jugador1_Posicion_Anterior);
-            Jugador1_BoundBox.setFromObject(Jugador1);
-
-            const moveSpeed = 0.25;
-            
-            // Forward/Backward movement
-            if (keyboard['KeyW']) {
-                Jugador1.position.z -= moveSpeed;
-            }
-            if (keyboard['KeyS']) {
-                Jugador1.position.z += moveSpeed;
-            }
-
-            // Strafe Left/Right
-            if (keyboard['KeyA']) {
-                Jugador1.position.x -= moveSpeed;
-            }
-            if (keyboard['KeyD']) {
-                Jugador1.position.x += moveSpeed;
-            }
-
-
-
-
-
-
-
-            //Jugador1_Posicion_Anterior.copy(Jugador1.position);
-
-            
-            checkCollisions();
-            Habitacion_1.Colisiones();
-
-            if (Habitacion_1.Colision_Con_Jugador == true){
-                //Habitacion_1.Wall1.material.color = new THREE.Color("black");
+            if (FIN_DEL_NIVEL){
                 
-                Jugador1.position.copy(Jugador1_Posicion_Anterior.position);
+                Set_NivelActual();
+
+
+                if (Jugador_Victoria == true){
+                    Nivel_Fue_Ganado();
+                    
+                    
+
+                                        
+                }
+                if (Jugador_Victoria == false){
+                    Nivel_Fue_Perdido()
+                    
+                    
+                }
+                
+                //location.href = 'niveles.html';
+            }
+            else{
+                Jugador1_BoundBox.getCenter(Jugador1_Posicion_Anterior);
+                Jugador1_BoundBox.setFromObject(Jugador1);
+
+                const moveSpeed = 0.25;
+                
+                // Forward/Backward movement
+                if (keyboard['KeyW']) {
+                    Jugador1.position.z -= moveSpeed;
+                }
+                if (keyboard['KeyS']) {
+                    Jugador1.position.z += moveSpeed;
+                }
+
+                // Strafe Left/Right
+                if (keyboard['KeyA']) {
+                    Jugador1.position.x -= moveSpeed;
+                }
+                if (keyboard['KeyD']) {
+                    Jugador1.position.x += moveSpeed;
+                }
+
+
+
+
+                
+
+
+                
+
+                
+                checkCollisions();
+                Habitacion_1.Colisiones();
+
+                if (Habitacion_1.Colision_Con_Jugador == true){
+                    //Habitacion_1.Wall1.material.color = new THREE.Color("black");
+                    
+                    Jugador1.position.copy(Jugador1_Posicion_Anterior.position);
+                }
+
+                
+
+                const center = new THREE.Vector3();
+                Jugador1_BoundBox.getCenter(center);
+                //Jugador1_Colision.update();
+                box.update();
+
+                if (Jugador1_Mixer) Jugador1_Mixer.update(delta);
             }
 
-            
 
-            const center = new THREE.Vector3();
-            Jugador1_BoundBox.getCenter(center);
-            //Jugador1_Colision.update();
-            box.update();
 
             
 
-            if (Jugador1_Mixer) Jugador1_Mixer.update(delta);
+            
+
+            
 
             if(Habitacion_1.Cuarto_Terminado == true){
                 Habitacion_1.Wall3_Puerta1.position.y = -20;
-                Habitacion_1.Wall7_Puerta2.position.y = -20;
+                Habitacion_1.Wall7_Puerta2.position.y = -30;
             }
             else{
                 Habitacion_1.Wall3_Puerta1.position.y = 10;
-                Habitacion_1.Wall7_Puerta2.position.y = -20;
+                Habitacion_1.Wall7_Puerta2.position.y = -30;
             }
 
             renderer.render(scene, camera);
