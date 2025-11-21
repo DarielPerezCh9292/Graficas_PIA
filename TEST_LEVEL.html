@@ -62,16 +62,172 @@
                 });
             });
         });
+
+
+
     </script>
 
     <script type="module">
+        
+        
+        
         import * as THREE from "./three.module.js";
         import { OrbitControls } from "./OrbitControls.js";
         import { GLTFLoader } from "./GLTFLoader.js";
         
-        
-        
+        class Cuartos{
+            
+            
+            constructor(positionX, positionY, positionZ, Player_BB){
 
+                this.positionX = positionX;
+                this.positionY = positionY;
+                this.positionZ = positionZ;
+
+                this.Cuarto_Terminado = false;
+
+                this.Colision_Con_Jugador = false;
+
+                this.Player_Temp_BB = Player_BB;
+
+                this.Wall1_Geometry = new THREE.BoxGeometry(2, 20, 50);
+                this.Wall1_Material = new THREE.MeshPhongMaterial({ color: "aqua" });
+                this.Wall1 = new THREE.Mesh(this.Wall1_Geometry, this.Wall1_Material);
+                this.Wall1_BoundBox = new THREE.Box3();
+                
+
+                this.Wall5_Geometry = new THREE.BoxGeometry(2, 20, 50);
+                this.Wall5_Material = new THREE.MeshPhongMaterial({ color: "aqua" });
+                this.Wall5 = new THREE.Mesh(this.Wall5_Geometry, this.Wall5_Material);
+                this.Wall5_BoundBox = new THREE.Box3();
+                
+
+                this.Wall2_Geometry = new THREE.BoxGeometry(18, 20, 2);
+                this.Wall2_Material = new THREE.MeshPhongMaterial({ color: "red" });
+                this.Wall2 = new THREE.Mesh(this.Wall2_Geometry, this.Wall2_Material);
+                this.Wall2_BoundBox = new THREE.Box3();
+                
+
+                this.Wall4_Geometry = new THREE.BoxGeometry(18, 20, 2);
+                this.Wall4_Material = new THREE.MeshPhongMaterial({ color: "red" });
+                this.Wall4 = new THREE.Mesh(this.Wall4_Geometry, this.Wall4_Material);
+                this.Wall4_BoundBox = new THREE.Box3();
+                
+
+                this.Wall8_Geometry = new THREE.BoxGeometry(18, 20, 2);
+                this.Wall8_Material = new THREE.MeshPhongMaterial({ color: "red" });
+                this.Wall8 = new THREE.Mesh(this.Wall8_Geometry, this.Wall8_Material);
+                this.Wall8_BoundBox = new THREE.Box3();
+                
+
+                this.Wall6_Geometry = new THREE.BoxGeometry(18, 20, 2);
+                this.Wall6_Material = new THREE.MeshPhongMaterial({ color: "red" });
+                this.Wall6 = new THREE.Mesh(this.Wall6_Geometry, this.Wall6_Material);
+                this.Wall6_BoundBox = new THREE.Box3();
+                
+
+                this.Wall3_Puerta1_Geometry = new THREE.BoxGeometry(10, 20, 2);
+                this.Wall3_Puerta1_Material = new THREE.MeshPhongMaterial({ color: "white" });
+                this.Wall3_Puerta1 = new THREE.Mesh(this.Wall3_Puerta1_Geometry, this.Wall3_Puerta1_Material);
+                this.Wall3_Puerta1_BoundBox = new THREE.Box3();
+                
+
+                this.Wall7_Puerta2_Geometry = new THREE.BoxGeometry(10, 20, 2);
+                this.Wall7_Puerta2_Material = new THREE.MeshPhongMaterial({ color: "white" });
+                this.Wall7_Puerta2 = new THREE.Mesh(this.Wall7_Puerta2_Geometry, this.Wall7_Puerta2_Material);
+                this.Wall7_Puerta2_BoundBox = new THREE.Box3();
+                
+
+            }
+
+            Construir_Cuarto(){
+                
+                this.Wall1.position.set(this.positionX + 24, this.positionY + 10, this.positionZ + 0);
+                this.Wall1_BoundBox.setFromObject(this.Wall1);
+                scene.add(this.Wall1);
+                
+                this.Wall5.position.set(this.positionX -24, this.positionY +  10, this.positionZ + 0);
+                this.Wall5_BoundBox.setFromObject(this.Wall5);
+                scene.add(this.Wall5);
+
+                this.Wall2.position.set(this.positionX + 14, this.positionY + 10, this.positionZ - 24);
+                this.Wall2_BoundBox.setFromObject(this.Wall2);
+                scene.add(this.Wall2);
+
+                this.Wall4.position.set(this.positionX -14, this.positionY + 10, this.positionZ - 24);
+                this.Wall4_BoundBox.setFromObject(this.Wall4);
+                scene.add(this.Wall4);
+
+                this.Wall8.position.set(this.positionX + 14, this.positionY + 10, this.positionZ + 24);
+                this.Wall8_BoundBox.setFromObject(this.Wall8);
+                scene.add(this.Wall8);
+
+                this.Wall6.position.set(this.positionX -14, this.positionY + 10, this.positionZ + 24);
+                this.Wall6_BoundBox.setFromObject(this.Wall6);
+                scene.add(this.Wall6);
+
+                this.Wall3_Puerta1.position.set(this.positionX + 0, this.positionY + 10, this.positionZ - 24);
+                this.Wall3_Puerta1_BoundBox.setFromObject(this.Wall3_Puerta1);
+                scene.add(this.Wall3_Puerta1);
+
+                this.Wall7_Puerta2.position.set(this.positionX + 0, this.positionY + 10, this.positionZ + 24);
+                this.Wall7_Puerta2_BoundBox.setFromObject(this.Wall7_Puerta2);
+                scene.add(this.Wall7_Puerta2);
+
+
+
+
+                
+            }
+
+            Colisiones()
+            {
+                this.Colision_Con_Jugador = false;
+
+                if(this.Wall1_BoundBox.intersectsBox(this.Player_Temp_BB))
+                {
+            
+                    this.Colision_Con_Jugador = true;
+                }
+                
+                if(this.Wall2_BoundBox.intersectsBox(this.Player_Temp_BB)){
+            
+                    this.Colision_Con_Jugador = true;
+                }
+
+                if(this.Wall3_Puerta1_BoundBox.intersectsBox(this.Player_Temp_BB)){
+            
+                    this.Colision_Con_Jugador = true;
+                }
+
+                if(this.Wall4_BoundBox.intersectsBox(this.Player_Temp_BB)){
+            
+                    this.Colision_Con_Jugador = true;
+                }
+
+                if(this.Wall5_BoundBox.intersectsBox(this.Player_Temp_BB)){
+            
+                    this.Colision_Con_Jugador = true;
+                }
+
+                if(this.Wall6_BoundBox.intersectsBox(this.Player_Temp_BB)){
+            
+                    this.Colision_Con_Jugador = true;
+                }
+
+                if(this.Wall8_BoundBox.intersectsBox(this.Player_Temp_BB)){
+            
+                    this.Colision_Con_Jugador = true;
+                }
+
+                
+                
+                
+
+            }
+        }
+        
+        //#region COSAS DE LA ESCENA
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87ceeb);
 
@@ -106,161 +262,87 @@
         plane.receiveShadow = true;
         scene.add(plane);
 
-        let spiderMixer, snakeMixer, esqueletoMixer, Jugador1_Mixer;
         const clock = new THREE.Clock();
         const loader = new GLTFLoader();
+        //#endregion
 
-        /*
         
-          loader.load('spider/spider.glb', (gltf) => {
-            const model = gltf.scene;
-            model.traverse(child => { if (child.isMesh) child.castShadow = true; });
-            model.scale.set(10, 10, 10);
-            model.position.set(10, 10, 0);
-            scene.add(model);
-            if (gltf.animations.length) {
-                spiderMixer = new THREE.AnimationMixer(model);
-                spiderMixer.clipAction(gltf.animations[0]).play();
-            }
-        }, undefined, (error) => console.error(error));
-  
-        loader.load('snake/source/snake.glb', (gltf) => {
-            const model = gltf.scene;
-            model.traverse(child => { if (child.isMesh) child.castShadow = true; });
-            model.scale.set(0.2, 0.2, 0.2);
-            model.position.set(-10, 0, 0);
-            scene.add(model);
-            if (gltf.animations.length) {
-                snakeMixer = new THREE.AnimationMixer(model);
-                snakeMixer.clipAction(gltf.animations[0]).play();
-            }
-        }, undefined, (error) => console.error(error));
-  
-        loader.load('Esqueleto/esqueletooo.glb', (gltf) => {
-            const model = gltf.scene;
-            model.traverse(child => { if (child.isMesh) child.castShadow = true; });
-            model.scale.set(2, 2, 2);
-            model.position.set(0, 0, -10);
-            scene.add(model);
-            if (gltf.animations.length) {
-                esqueletoMixer = new THREE.AnimationMixer(model);
-                esqueletoMixer.clipAction(gltf.animations[0]).play();
-            }
-        }, undefined, (error) => console.error(error));
-  
-        */
-    
-        //let STARTING_POSITION = new THREE.Vector3( 0, 0, 50 );
+        //#region JUGADOR
+        let Jugador1_Mixer;
+        
+
+        
 
         let Jugador1;
+        let Jugador1_Posicion_Anterior = new THREE.Vector3();
+        let Jugador1_Colision = false;
         let JugadorPosX;
         let JugadorPosY;
         let JugadorPosZ;
-        let Jugador1_Colision = new THREE.Box3();
+        let Jugador1_BoundBox = new THREE.Box3();
+        let box;
         loader.load('Personaje/personajeee.glb', (gltf) => {
             const model = gltf.scene;
-            Jugador1 = gltf.scene;
-            
+            Jugador1 = gltf.scene;        
+
+
             Jugador1.traverse(child => { if (child.isMesh) child.castShadow = true; });
             Jugador1.scale.set(2, 2, 2);
             Jugador1.position.set(0, 0, 50);
+
+            //Jugador1_Colision.setFromObject(Jugador1);
+
             scene.add(Jugador1);
-            Jugador1_Colision.setFromObject(Jugador1);
+            
+            box = new THREE.BoxHelper( Jugador1, 0xffff00 );
+            scene.add( box );
+
+
             if (gltf.animations.length) {
                 Jugador1_Mixer = new THREE.AnimationMixer(Jugador1);
                 Jugador1_Mixer.clipAction(gltf.animations[0]).play();
             }
         }, undefined, (error) => console.error(error));
+        //#endregion
         
-        //
+        
+        //#region Habitacion 1 Resolver Puzzle
+        const Puzzle_Resuelto_Geometry = new THREE.BoxGeometry(10, 5, 10);
+        const Puzzle_Resuelto_Material = new THREE.MeshPhongMaterial({ color: "white" });
+        const Puzzle_Resuelto = new THREE.Mesh(Puzzle_Resuelto_Geometry, Puzzle_Resuelto_Material);
+        const Puzzle_Resuelto_BoundBox = new THREE.Box3();
+        Puzzle_Resuelto.position.set(0, 0, 0);
+        Puzzle_Resuelto_BoundBox.setFromObject(Puzzle_Resuelto);
+        scene.add(Puzzle_Resuelto);
+        //#endregion
+        
 
+        //#region Zona Victoria
+        let Nivel_Ganado = false;
 
+        const Zona_Victoria_Geometry = new THREE.BoxGeometry(10, 5, 10);
+        const Zona_Victoria_Material = new THREE.MeshPhongMaterial({ color: "white" });
+        const Zona_Victoria = new THREE.Mesh(Zona_Victoria_Geometry, Zona_Victoria_Material);
+        const Zona_Victoria_BoundBox = new THREE.Box3();
+        Zona_Victoria.position.set(0, 0, -50);
+        Zona_Victoria_BoundBox.setFromObject(Zona_Victoria);
+        scene.add(Zona_Victoria);
 
-
-        const Wall1_Geometry = new THREE.BoxGeometry(2, 20, 50);
-        const Wall1_Material = new THREE.MeshPhongMaterial({ color: "aqua" });
-        const Wall1 = new THREE.Mesh(Wall1_Geometry, Wall1_Material);
-        const Wall1_BoundBox = new THREE.Box3();
-        Wall1.position.set(24, 10, 0);
-        Wall1_BoundBox.setFromObject(Wall1);
-        scene.add(Wall1);
-
-        const Wall5_Geometry = new THREE.BoxGeometry(2, 20, 50);
-        const Wall5_Material = new THREE.MeshPhongMaterial({ color: "aqua" });
-        const Wall5 = new THREE.Mesh(Wall5_Geometry, Wall5_Material);
-        const Wall5_BoundBox = new THREE.Box3();
-        Wall5.position.set(-24, 10, 0);
-        Wall5_BoundBox.setFromObject(Wall5);
-        scene.add(Wall5);
-
-        const Wall2_Geometry = new THREE.BoxGeometry(18, 20, 2);
-        const Wall2_Material = new THREE.MeshPhongMaterial({ color: "red" });
-        const Wall2 = new THREE.Mesh(Wall2_Geometry, Wall2_Material);
-        const Wall2_BoundBox = new THREE.Box3();
-        Wall2.position.set(14, 10, -24);
-        Wall2_BoundBox.setFromObject(Wall2);
-        scene.add(Wall2);
-
-        const Wall4_Geometry = new THREE.BoxGeometry(18, 20, 2);
-        const Wall4_Material = new THREE.MeshPhongMaterial({ color: "red" });
-        const Wall4 = new THREE.Mesh(Wall4_Geometry, Wall4_Material);
-        const Wall4_BoundBox = new THREE.Box3();
-        Wall4.position.set(-14, 10, -24);
-        Wall4_BoundBox.setFromObject(Wall4);
-        scene.add(Wall4);
-
-        const Wall8_Geometry = new THREE.BoxGeometry(18, 20, 2);
-        const Wall8_Material = new THREE.MeshPhongMaterial({ color: "red" });
-        const Wall8 = new THREE.Mesh(Wall8_Geometry, Wall8_Material);
-        const Wall8_BoundBox = new THREE.Box3();
-        Wall8.position.set(14, 10, 24);
-        Wall8_BoundBox.setFromObject(Wall8);
-        scene.add(Wall8);
-
-        const Wall6_Geometry = new THREE.BoxGeometry(18, 20, 2);
-        const Wall6_Material = new THREE.MeshPhongMaterial({ color: "red" });
-        const Wall6 = new THREE.Mesh(Wall6_Geometry, Wall6_Material);
-        const Wall6_BoundBox = new THREE.Box3();
-        Wall6.position.set(-14, 10, 24);
-        Wall6_BoundBox.setFromObject(Wall6);
-        scene.add(Wall6);
-
-        const Wall3_Puerta1_Geometry = new THREE.BoxGeometry(10, 20, 2);
-        const Wall3_Puerta1_Material = new THREE.MeshPhongMaterial({ color: "white" });
-        const Wall3_Puerta1 = new THREE.Mesh(Wall3_Puerta1_Geometry, Wall3_Puerta1_Material);
-        const Wall3_Puerta1_BoundBox = new THREE.Box3();
-        Wall3_Puerta1.position.set(0, 10, -24);
-        Wall3_Puerta1_BoundBox.setFromObject(Wall3_Puerta1);
-        scene.add(Wall3_Puerta1);
-
-        const Wall7_Puerta2_Geometry = new THREE.BoxGeometry(10, 20, 2);
-        const Wall7_Puerta2_Material = new THREE.MeshPhongMaterial({ color: "white" });
-        const Wall7_Puerta2 = new THREE.Mesh(Wall7_Puerta2_Geometry, Wall7_Puerta2_Material);
-        const Wall7_Puerta2_BoundBox = new THREE.Box3();
-        Wall7_Puerta2.position.set(0, 10, 24);
-        Wall7_Puerta2_BoundBox.setFromObject(Wall7_Puerta2);
-        scene.add(Wall7_Puerta2);
-
-        let Cuarto_Terminado = false;
-
-
-
-
-
-
-
-        //controls.target.set(.5, .5, .5)
+        //#endregion
+        
+        const Habitacion_1 = new Cuartos(0,0,0,Jugador1_BoundBox);
+        Habitacion_1.Construir_Cuarto();
+        
         controls.target.set(0, 0, 0);
+
         controls.update();
-        //controls.target.set(STARTING_POSITION);
 
         document.onkeydown = function (e) {
             console.log(e);
 
             // ArrowLeft
             if (e.keyCode === 37) {
-                Jugador1.position.x = Jugador1.position.x - 1;
-                //console.log(Jugador1.position.x);
+                Jugador1.position.x = Jugador1.position.x - 1;                
                 JugadorPosX = Jugador1.position.x;                
             }
 
@@ -275,7 +357,7 @@
                 Jugador1.position.z = Jugador1.position.z - 1;
                 JugadorPosZ = Jugador1.position.z;
 
-                Cuarto_Terminado = true;
+                
             }
 
             // Arrow ADELANTE
@@ -283,7 +365,7 @@
                 Jugador1.position.z = Jugador1.position.z + 1;
                 JugadorPosZ = Jugador1.position.z;
 
-                Cuarto_Terminado = false;
+                
             }
 
             //JugadorPosX = Jugador1.position.x;
@@ -295,94 +377,89 @@
 
         };
         
-        function CamaraPos_Draw(){
-            let X_Pos = document.getElementById("Camara_X_Pos");
-            let Y_Pos = document.getElementById("Camara_Y_Pos");
-            let Z_Pos = document.getElementById("Camara_Z_Pos");
-
-            
-
-            X_Pos.innerHTML = JugadorPosX;
-            Y_Pos.innerHTML = JugadorPosY;
-            Z_Pos.innerHTML = JugadorPosZ;
-
-            
-        }
-        //CamaraPos_Draw();
+        
+        
 
 
         function checkCollisions() {
             
             
-            if(Jugador1_Colision.containsBox(Wall1_BoundBox)){
+
             
-                Wall1.material.color = new THREE.Color("black");
+
+
+            
+            
+
+            if(Zona_Victoria_BoundBox.intersectsBox(Jugador1_BoundBox)){
+            
+                Zona_Victoria.material.color = new THREE.Color("black");
+                
+                
             }
             else{
             
-                Wall1.material.color = new THREE.Color(0xffff00);
+                Zona_Victoria.material.color = new THREE.Color("white");
+                
             }
 
-            /*if(cube2BB.intersectsBox(NewColision_2)){
-            //particles.position.set(0, 0, 0);
-            NewObject_2.material.color = new THREE.Color("black");
+            if(Puzzle_Resuelto_BoundBox.intersectsBox(Jugador1_BoundBox)){
+            
+                Habitacion_1.Cuarto_Terminado = true;
             }
-            else{
-            //particles.position.set(0, -10, 0);
-            NewObject_2.material.color = new THREE.Color(0xF54927);
-            }
+            
 
-
-            if(cube2BB.intersectsBox(NewColision_3)){
-            //particles.position.set(3, 0, 0);
-            NewObject_3.material.color = new THREE.Color("black");
-            }
-            else{
-            //particles.position.set(0, -10, 0);
-            NewObject_3.material.color = new THREE.Color(0x3527F5);
-            }*/
-
-
-            /*if (cube2BB.containsBox(cube1BB)) {
-            cube1.scale.y = 2;
-            } else {
-            cube1.scale.y = 1;
-            }
-
-            if (cube2BB.intersectsBox(cube1BB)) {
-            cube1.material.color = new THREE.Color("red");
-            } else {
-            cube1.material.color = new THREE.Color("aqua");
-            }
-
-            if (cube2BB.intersectsSphere(sphereBS)) {
-            sphere.material.wireframe = true;
-            } else {
-            sphere.material.wireframe = false;
-            }*/
+            
         }
 
-        checkCollisions();
+        
 
         function animate() {
             requestAnimationFrame(animate);
+
             const delta = clock.getDelta();
-            //if (spiderMixer) spiderMixer.update(delta);
-            //if (snakeMixer) snakeMixer.update(delta);
-            //if (esqueletoMixer) esqueletoMixer.update(delta);
+            
+            Jugador1_BoundBox.getCenter(Jugador1_Posicion_Anterior);
+            Jugador1_BoundBox.setFromObject(Jugador1);
+
+            
+
+
+            //Jugador1_Posicion_Anterior.copy(Jugador1.position);
+
+            
+            checkCollisions();
+            Habitacion_1.Colisiones();
+
+            if (Habitacion_1.Colision_Con_Jugador == true){
+                Habitacion_1.Wall1.material.color = new THREE.Color("black");
+                
+                Jugador1.position.copy(Jugador1_Posicion_Anterior.position);
+            }
+
+            
+
+            const center = new THREE.Vector3();
+            Jugador1_BoundBox.getCenter(center);
+            //Jugador1_Colision.update();
+            box.update();
+
+            
+
             if (Jugador1_Mixer) Jugador1_Mixer.update(delta);
 
-            if(Cuarto_Terminado == true){
-                Wall3_Puerta1.position.y = -20;
-                Wall7_Puerta2.position.y = -20;
+            if(Habitacion_1.Cuarto_Terminado == true){
+                Habitacion_1.Wall3_Puerta1.position.y = -20;
+                Habitacion_1.Wall7_Puerta2.position.y = -20;
             }
             else{
-                Wall3_Puerta1.position.y = 10;
-                Wall7_Puerta2.position.y = 10;
+                Habitacion_1.Wall3_Puerta1.position.y = 10;
+                Habitacion_1.Wall7_Puerta2.position.y = -20;
             }
 
             renderer.render(scene, camera);
         }
+
         animate();
     </script>
 </body>
