@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Nivel 3 - Con Salto</title>
+    <title>Nivel 3</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="stylesheet" href="Niveles_style.css">
     <style>
@@ -28,6 +28,10 @@
 </head>
 
 <body>
+    <audio id="musicaFondo" loop>
+        <source src="level3.mp3" type="audio/mpeg">
+    </audio>
+
     <div id="debugInfo">Posición: Cargando...</div>
 
     <i class="Cofre_Clase"></i>
@@ -57,19 +61,6 @@
         <button class="Opciones-button opcion-item hidden">Reiniciar</button>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const toggleButton = document.getElementById('Menu_icono');
-            const targetElements = document.querySelectorAll('.opcion-item');
-
-            toggleButton.addEventListener('click', () => {
-                targetElements.forEach(element => {
-                    element.classList.toggle('hidden');
-                });
-            });
-        });
-    </script>
-
     <script type="module">
         function Set_NivelActual() {
             var VAR_Nivel_Actual = 3;
@@ -79,6 +70,67 @@
         import * as THREE from "./three.module.js";
         import { OrbitControls } from "./OrbitControls.js";
         import { GLTFLoader } from "./GLTFLoader.js";
+
+        // --- PAUSA ---
+        let juegoPausado = false;
+
+        // --- MENU Y PAUSA ---
+        const toggleButton = document.getElementById('Menu_icono');
+        const targetElements = document.querySelectorAll('.opcion-item');
+
+        toggleButton.addEventListener('click', () => {
+            targetElements.forEach(element => {
+                element.classList.toggle('hidden');
+            });
+            juegoPausado = !juegoPausado;
+            if (!juegoPausado) {
+                clock.getDelta();
+            }
+        });
+
+        // --- AUDIO ---
+        const audio = document.getElementById('musicaFondo');
+        const sliderVolumen = document.getElementById('volume-slider');
+        const checkMusica = document.querySelector('.checkbox-control input');
+
+        const volumenGuardado = localStorage.getItem('volumenGlobal');
+        const estabaSonando = localStorage.getItem('musicaSonando');
+
+        if (volumenGuardado !== null) {
+            audio.volume = parseFloat(volumenGuardado);
+            sliderVolumen.value = audio.volume * 100;
+        } else {
+            audio.volume = 0.75;
+        }
+
+        if (estabaSonando === 'true') {
+            checkMusica.checked = true;
+            var playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    document.body.addEventListener('click', () => {
+                        audio.play();
+                    }, { once: true });
+                });
+            }
+        } else {
+            checkMusica.checked = false;
+        }
+
+        sliderVolumen.addEventListener('input', function() {
+            audio.volume = this.value / 100;
+            localStorage.setItem('volumenGlobal', audio.volume);
+        });
+
+        checkMusica.addEventListener('change', function() {
+            if (this.checked) {
+                audio.play();
+                localStorage.setItem('musicaSonando', 'true');
+            } else {
+                audio.pause();
+                localStorage.setItem('musicaSonando', 'false');
+            }
+        });
 
         // --- CLASE CUARTOS ---
         class Cuartos{
@@ -179,7 +231,6 @@
             }
         }
         
-        //#region COSAS DE LA ESCENA
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87ceeb); 
 
@@ -198,7 +249,6 @@
         directionalLight.castShadow = true;
         scene.add(directionalLight);
 
-        // CONTROLES
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.1;
@@ -210,10 +260,7 @@
 
         const clock = new THREE.Clock();
         const loader = new GLTFLoader();
-        //#endregion
 
-        
-        //#region VARIABLES JUGADOR Y FISICAS
         let Jugador1;
         let Jugador1_Mixer;
         let Jugador1_Action;
@@ -221,24 +268,23 @@
         let Jugador1_BoundBox = new THREE.Box3();
         let box;
         
-        // --- VARIABLES DE GRAVEDAD Y SALTO ---
+        // FISICAS
         let terrenoMeshes = [];
         const raycasterSuelo = new THREE.Raycaster();
         const vectorAbajo = new THREE.Vector3(0, -1, 0);
         
         let velocidadVertical = 0;    
-        const gravedad = -10.0; // Gravedad un poco más fuerte para que el salto se sienta bien
-        const fuerzaSalto = 10.0; // Fuerza del salto
+        const gravedad = -10.0;       
+        const fuerzaSalto = 6.0;
         let enSuelo = false;          
-        //#endregion
 
-        //#region CARGAR JUGADOR
+        // CARGA JUGADOR
         loader.load('Personaje/personajeee.glb', (gltf) => {
             Jugador1 = gltf.scene;        
             Jugador1.traverse(child => { if (child.isMesh) child.castShadow = true; });
             Jugador1.scale.set(2, 2, 2);
             
-            // Posición inicial
+            // Posicion Inicial Nivel 3
             Jugador1.position.set(715, -160, -112); 
 
             scene.add(Jugador1);
@@ -252,9 +298,8 @@
                 Jugador1_Action.play();
             }
         }, undefined, (error) => console.error(error));
-        //#endregion
         
-        //#region CARGAR MAPA ISLA (NIVEL 3)
+        // CARGA MAPA ISLA
         loader.load('Isla_flotante/islaflotante_conarbol.glb', (gltf) => {
             const mapaIsla = gltf.scene;
             
@@ -270,9 +315,7 @@
             });
             scene.add(mapaIsla);
         }, undefined, (error) => console.error(error));
-        //#endregion
         
-        //#region OBJETOS DEL JUEGO
         const Puzzle_Resuelto_Geometry = new THREE.BoxGeometry(10, 5, 10);
         const Puzzle_Resuelto_Material = new THREE.MeshPhongMaterial({ color: "white" });
         const Puzzle_Resuelto = new THREE.Mesh(Puzzle_Resuelto_Geometry, Puzzle_Resuelto_Material);
@@ -291,7 +334,6 @@
         Zona_Victoria.position.set(0, 0, -50);
         Zona_Victoria_BoundBox.setFromObject(Zona_Victoria);
         scene.add(Zona_Victoria);
-        //#endregion
         
         const Habitacion_1 = new Cuartos(0,0,0,Jugador1_BoundBox, "./uv_texture.jpg", "./temp_puerta.jpg");
         Habitacion_1.Construir_Cuarto();
@@ -330,7 +372,7 @@
         document.addEventListener('keydown', (event) => { keyboard[event.code] = true; });
         document.addEventListener('keyup', (event) => { keyboard[event.code] = false; });
 
-        // --- FUNCIÓN DE FÍSICAS CON 5 RAYOS ---
+        // --- FÍSICAS 5 RAYOS ---
         function aplicarFisicas(delta) {
             if (!Jugador1 || terrenoMeshes.length === 0) return;
 
@@ -343,7 +385,7 @@
             ];
 
             let sueloDetectado = false;
-            let alturaSuelo = -99999; 
+            let alturaSuelo = -99999;
 
             for (let i = 0; i < offsets.length; i++) {
                 const origenRayo = Jugador1.position.clone().add(offsets[i]);
@@ -354,7 +396,6 @@
 
                 if (intersecciones.length > 0) {
                     const hit = intersecciones[0];
-                    
                     if (hit.distance < 6.0) {
                         if (hit.point.y > alturaSuelo) {
                             alturaSuelo = hit.point.y;
@@ -365,8 +406,6 @@
             }
 
             if (sueloDetectado) {
-                // SOLO NOS PEGAMOS AL SUELO SI ESTAMOS CAYENDO (velocidad <= 0)
-                // SI ESTAMOS SALTANDO (velocidad > 0), IGNORAMOS EL SUELO
                 if (velocidadVertical <= 0) {
                     enSuelo = true;
                     velocidadVertical = 0; 
@@ -374,7 +413,6 @@
                         Jugador1.position.y = alturaSuelo;
                     }
                 } else {
-                    // Estamos subiendo por un salto, seguimos aplicando gravedad
                     enSuelo = false;
                     velocidadVertical += gravedad * delta; 
                     Jugador1.position.y += velocidadVertical * delta; 
@@ -393,6 +431,13 @@
 
         function animate() {
             requestAnimationFrame(animate);
+
+            // --- PAUSA ---
+            if (juegoPausado) {
+                renderer.render(scene, camera);
+                return;
+            }
+
             const delta = clock.getDelta();
             
             if (FIN_DEL_NIVEL){
@@ -405,22 +450,18 @@
                     Jugador1_BoundBox.setFromObject(Jugador1);
                     Jugador1_Posicion_Anterior.copy(Jugador1.position);
 
-                    // DEBUG
                     const infoDiv = document.getElementById('debugInfo');
                     if (infoDiv) {
                         infoDiv.innerText = `X: ${Jugador1.position.x.toFixed(2)} | Y: ${Jugador1.position.y.toFixed(2)} | Z: ${Jugador1.position.z.toFixed(2)}`;
                     }
 
-                    // --- SALTO ---
                     if (keyboard['Space'] && enSuelo) {
                         velocidadVertical = fuerzaSalto;
-                        enSuelo = false; // Despegamos inmediatamente
+                        enSuelo = false; 
                     }
 
-                    // FISICAS
                     aplicarFisicas(delta);
 
-                    // MOVIMIENTO
                     const moveSpeed = 2.75;
                     
                     const camForward = new THREE.Vector3();
@@ -463,7 +504,6 @@
                     box.update();
                 }
 
-                // Colisiones
                 checkCollisions();
                 Habitacion_1.Colisiones();
 

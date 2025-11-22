@@ -28,6 +28,10 @@
 </head>
 
 <body>
+    <audio id="musicaFondo" loop>
+        <source src="level2.mp3" type="audio/mpeg">
+    </audio>
+
     <div id="debugInfo">Posición: Cargando...</div>
 
     <i class="Cofre_Clase"></i>
@@ -57,19 +61,6 @@
         <button class="Opciones-button opcion-item hidden">Reiniciar</button>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const toggleButton = document.getElementById('Menu_icono');
-            const targetElements = document.querySelectorAll('.opcion-item');
-
-            toggleButton.addEventListener('click', () => {
-                targetElements.forEach(element => {
-                    element.classList.toggle('hidden');
-                });
-            });
-        });
-    </script>
-
     <script type="module">
         function Set_NivelActual() {
             var VAR_Nivel_Actual = 2;
@@ -80,6 +71,68 @@
         import { OrbitControls } from "./OrbitControls.js";
         import { GLTFLoader } from "./GLTFLoader.js";
 
+        // --- PAUSA ---
+        let juegoPausado = false;
+
+        // --- MENU Y PAUSA ---
+        const toggleButton = document.getElementById('Menu_icono');
+        const targetElements = document.querySelectorAll('.opcion-item');
+
+        toggleButton.addEventListener('click', () => {
+            targetElements.forEach(element => {
+                element.classList.toggle('hidden');
+            });
+            juegoPausado = !juegoPausado;
+            if (!juegoPausado) {
+                clock.getDelta();
+            }
+        });
+
+        // --- AUDIO ---
+        const audio = document.getElementById('musicaFondo');
+        const sliderVolumen = document.getElementById('volume-slider');
+        const checkMusica = document.querySelector('.checkbox-control input');
+
+        const volumenGuardado = localStorage.getItem('volumenGlobal');
+        const estabaSonando = localStorage.getItem('musicaSonando');
+
+        if (volumenGuardado !== null) {
+            audio.volume = parseFloat(volumenGuardado);
+            sliderVolumen.value = audio.volume * 100;
+        } else {
+            audio.volume = 0.75;
+        }
+
+        if (estabaSonando === 'true') {
+            checkMusica.checked = true;
+            var playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    document.body.addEventListener('click', () => {
+                        audio.play();
+                    }, { once: true });
+                });
+            }
+        } else {
+            checkMusica.checked = false;
+        }
+
+        sliderVolumen.addEventListener('input', function() {
+            audio.volume = this.value / 100;
+            localStorage.setItem('volumenGlobal', audio.volume);
+        });
+
+        checkMusica.addEventListener('change', function() {
+            if (this.checked) {
+                audio.play();
+                localStorage.setItem('musicaSonando', 'true');
+            } else {
+                audio.pause();
+                localStorage.setItem('musicaSonando', 'false');
+            }
+        });
+
+        // --- CLASE CUARTOS ---
         class Cuartos{
             constructor(positionX, positionY, positionZ, Player_BB, mat_Paredes, mat_Puertas){
                 this.positionX = positionX;
@@ -215,22 +268,22 @@
         let Jugador1_BoundBox = new THREE.Box3();
         let box;
         
+        // FISICAS
         let terrenoMeshes = [];
         const raycasterSuelo = new THREE.Raycaster();
         const vectorAbajo = new THREE.Vector3(0, -1, 0);
         
         let velocidadVertical = 0;    
-        const gravedad = -9.8;       
+        const gravedad = -10.0;       
         const fuerzaSalto = 6.0;
         let enSuelo = false;          
 
+        // CARGA JUGADOR
         loader.load('Personaje/personajeee.glb', (gltf) => {
             Jugador1 = gltf.scene;        
             Jugador1.traverse(child => { if (child.isMesh) child.castShadow = true; });
             Jugador1.scale.set(2, 2, 2);
-            
-            // POSICIÓN INICIAL NIVEL 2
-            Jugador1.position.set(10, 5, 10); 
+            Jugador1.position.set(10, 5, 10); // Posicion Inicial Nivel 2
 
             scene.add(Jugador1);
             
@@ -244,7 +297,7 @@
             }
         }, undefined, (error) => console.error(error));
         
-        // CARGA DEL MAPA NIVEL 2
+        // CARGA MAPA CUEVA
         loader.load('cueva_con_tesoro/crystal_caverns.glb', (gltf) => {
             const mapaCueva = gltf.scene;
             mapaCueva.scale.set(12, 12, 12); 
@@ -316,7 +369,7 @@
         document.addEventListener('keydown', (event) => { keyboard[event.code] = true; });
         document.addEventListener('keyup', (event) => { keyboard[event.code] = false; });
 
-        // --- FÍSICAS MEJORADAS CON 5 RAYOS ---
+        // --- FÍSICAS 5 RAYOS ---
         function aplicarFisicas(delta) {
             if (!Jugador1 || terrenoMeshes.length === 0) return;
 
@@ -375,6 +428,13 @@
 
         function animate() {
             requestAnimationFrame(animate);
+
+            // --- PAUSA ---
+            if (juegoPausado) {
+                renderer.render(scene, camera);
+                return;
+            }
+
             const delta = clock.getDelta();
             
             if (FIN_DEL_NIVEL){
@@ -387,22 +447,18 @@
                     Jugador1_BoundBox.setFromObject(Jugador1);
                     Jugador1_Posicion_Anterior.copy(Jugador1.position);
 
-                    // DEBUG
                     const infoDiv = document.getElementById('debugInfo');
                     if (infoDiv) {
                         infoDiv.innerText = `X: ${Jugador1.position.x.toFixed(2)} | Y: ${Jugador1.position.y.toFixed(2)} | Z: ${Jugador1.position.z.toFixed(2)}`;
                     }
 
-                    // SALTO
                     if (keyboard['Space'] && enSuelo) {
                         velocidadVertical = fuerzaSalto;
                         enSuelo = false; 
                     }
 
-                    // FÍSICAS
                     aplicarFisicas(delta);
 
-                    // MOVIMIENTO
                     const moveSpeed = 0.75;
                     
                     const camForward = new THREE.Vector3();

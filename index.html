@@ -8,6 +8,10 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <audio id="musicaFondo" loop>
+        <source src="index.mp3" type="audio/mpeg">
+    </audio>
+
     <i class="Cofre_Clase"></i>
     <div class="Opciones-container">
         <img id="Menu_icono" src="3 rayas.png" alt="Icono de Menú" width="50px" height="50px">
@@ -52,6 +56,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // --- LÓGICA DE MENÚ EXISTENTE ---
             const toggleButton = document.getElementById('Menu_icono');
             const targetElements = document.querySelectorAll('.opcion-item');
 
@@ -61,12 +66,10 @@
                 });
             });
 
-
             const achievementsButton = document.getElementById('achievementsButton');
             const backToMenuButton = document.getElementById('back-to-menu-button');
             const mainMenu = document.getElementById('main-menu-buttons');
             const achievementsScreen = document.getElementById('achievements-screen');
-
 
             achievementsButton.addEventListener('click', () => {
                 mainMenu.classList.add('hidden');
@@ -74,18 +77,94 @@
                 targetElements.forEach(element => element.classList.add('hidden'));
             });
 
-
             backToMenuButton.addEventListener('click', () => {
                 achievementsScreen.classList.add('hidden');
                 mainMenu.classList.remove('hidden');
                 history.pushState("", document.title, window.location.pathname + window.location.search);
             });
 
-
             if (window.location.hash === '#achievements') {
                 mainMenu.classList.add('hidden');
                 achievementsScreen.classList.remove('hidden');
             }
+
+            // =====================================================
+            // --- SISTEMA DE AUDIO PERSISTENTE ENTRE PÁGINAS ---
+            // =====================================================
+            
+            const audio = document.getElementById('musicaFondo');
+            const sliderVolumen = document.getElementById('volume-slider');
+            const checkMusica = document.querySelector('.checkbox-control input');
+
+            // --- PARTE A: RECUPERAR EL ESTADO ANTERIOR ---
+            // Leemos la memoria del navegador al cargar la página
+            const volumenGuardado = localStorage.getItem('volumenGlobal');
+            const tiempoGuardado = localStorage.getItem('musicaTiempo');
+            const estabaSonando = localStorage.getItem('musicaSonando');
+
+            // 1. Restaurar Volumen
+            if (volumenGuardado !== null) {
+                audio.volume = parseFloat(volumenGuardado);
+                sliderVolumen.value = audio.volume * 100;
+            } else {
+                audio.volume = 0.75; // Valor por defecto
+            }
+
+            // 2. Restaurar Tiempo (Para que la canción no empiece de 0)
+            if (tiempoGuardado !== null) {
+                audio.currentTime = parseFloat(tiempoGuardado);
+            }
+
+            // 3. Restaurar Reproducción (Play/Pause)
+            if (estabaSonando === 'true') {
+                checkMusica.checked = true;
+                // Intentamos reproducir. Los navegadores modernos a veces bloquean esto
+                // hasta que el usuario hace clic, pero como viene de un clic anterior, suele funcionar.
+                var playPromise = audio.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log("Esperando interacción del usuario para reproducir audio...");
+                        // Si falla (bloqueo de navegador), esperamos al primer clic en cualquier lado
+                        document.body.addEventListener('click', () => {
+                            audio.play();
+                        }, { once: true });
+                    });
+                }
+            } else {
+                checkMusica.checked = false; 
+                // Si el usuario la apagó en la otra página, la dejamos apagada.
+            }
+
+            // --- PARTE B: GUARDAR EL ESTADO AL SALIR ---
+            // Este evento ocurre justo antes de cambiar de página (ej. al hacer clic en "Jugar")
+            window.addEventListener("beforeunload", () => {
+                // Si la música está sonando, guardamos el tiempo exacto
+                if (!audio.paused) {
+                    localStorage.setItem('musicaTiempo', audio.currentTime);
+                    localStorage.setItem('musicaSonando', 'true');
+                } else {
+                    localStorage.setItem('musicaSonando', 'false');
+                }
+                localStorage.setItem('volumenGlobal', audio.volume);
+            });
+
+            // --- PARTE C: CONTROLES NORMALES ---
+            sliderVolumen.addEventListener('input', function() {
+                audio.volume = this.value / 100;
+                // Guardamos el volumen en tiempo real por si recarga la página
+                localStorage.setItem('volumenGlobal', audio.volume);
+            });
+
+            checkMusica.addEventListener('change', function() {
+                if (this.checked) {
+                    audio.play();
+                    localStorage.setItem('musicaSonando', 'true');
+                } else {
+                    audio.pause();
+                    localStorage.setItem('musicaSonando', 'false');
+                }
+            });
 
         });
     </script>
