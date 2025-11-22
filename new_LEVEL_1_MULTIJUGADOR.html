@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nivel 1</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="Niveles_style.css">
+    <style>
+        body {
+            margin: 0;
+        }
+        #debugInfo {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #00ff00;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 16px;
+            z-index: 2000;
+            border-radius: 5px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <audio id="musicaFondo" loop>
+        <source src="level1.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="debugInfo">Posición: Cargando...</div>
+
+    <i class="Cofre_Clase"></i>
+    <div class="Opciones-container">
+        <img id="Menu_icono" src="3 rayas.png" alt="Icono de Menú" width="50px" height="50px">
+        <div class="opcion-item volume-control hidden">
+            <label for="volume-slider">Volumen</label>
+            <input type="range" id="volume-slider" min="0" max="100" value="75">
+        </div>
+        <div class="opcion-item checkbox-control hidden">
+            <span>Música</span>
+            <label class="switch">
+                <input type="checkbox" checked>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden">Puntuaciones</button>
+        <hr class="opcion-item hidden">
+        <button id="achievementsButton" class="Opciones-button opcion-item hidden"
+            onclick="location.href='index.html#achievements';">Logros</button>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden">Guardar Partida</button>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden" onclick="location.href='index.html';">Salir</button>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden">Reiniciar</button>
+    </div>
+
+    <script type="module">
+        function Set_NivelActual() {
+            var VAR_Nivel_Actual = 1;
+            localStorage.setItem("Nivel_Actual",VAR_Nivel_Actual);
+        }
+        
+        import * as THREE from "./three.module.js";
+        import { OrbitControls } from "./OrbitControls.js";
+        import { GLTFLoader } from "./GLTFLoader.js";
+        
+        // --- VARIABLE DE PAUSA ---
+        let juegoPausado = false;
+
+        // --- LÓGICA DEL MENÚ Y PAUSA ---
+        const toggleButton = document.getElementById('Menu_icono');
+        const targetElements = document.querySelectorAll('.opcion-item');
+
+        toggleButton.addEventListener('click', () => {
+            // 1. Mostrar/Ocultar menú
+            targetElements.forEach(element => {
+                element.classList.toggle('hidden');
+            });
+
+            // 2. Alternar Pausa
+            juegoPausado = !juegoPausado;
+
+            // 3. Resetear reloj al reanudar para evitar saltos bruscos
+            if (!juegoPausado) {
+                clock.getDelta();
+            }
+        });
+
+        // --- LÓGICA DE AUDIO ---
+        const audio = document.getElementById('musicaFondo');
+        const sliderVolumen = document.getElementById('volume-slider');
+        const checkMusica = document.querySelector('.checkbox-control input');
+
+        const volumenGuardado = localStorage.getItem('volumenGlobal');
+        const estabaSonando = localStorage.getItem('musicaSonando');
+
+        if (volumenGuardado !== null) {
+            audio.volume = parseFloat(volumenGuardado);
+            sliderVolumen.value = audio.volume * 100;
+        } else {
+            audio.volume = 0.75;
+        }
+
+        if (estabaSonando === 'true') {
+            checkMusica.checked = true;
+            var playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    document.body.addEventListener('click', () => {
+                        audio.play();
+                    }, { once: true });
+                });
+            }
+        } else {
+            checkMusica.checked = false;
+        }
+
+        sliderVolumen.addEventListener('input', function() {
+            audio.volume = this.value / 100;
+            localStorage.setItem('volumenGlobal', audio.volume);
+        });
+
+        checkMusica.addEventListener('change', function() {
+            if (this.checked) {
+                audio.play();
+                localStorage.setItem('musicaSonando', 'true');
+            } else {
+                audio.pause();
+                localStorage.setItem('musicaSonando', 'false');
+            }
+        });
+
+        // --- CLASE CUARTOS ---
+        class Cuartos{
+            constructor(positionX, positionY, positionZ, Player_BB, mat_Paredes, mat_Puertas){
+                this.positionX = positionX;
+                this.positionY = positionY;
+                this.positionZ = positionZ;
+                this.mat_Paredes = mat_Paredes;
+                this.mat_Puertas = mat_Puertas;
+                this.Cuarto_Terminado = false;
+                this.Colision_Con_Jugador = false;
+                this.Player_Temp_BB = Player_BB;
+
+                this.Paredes_Material = new THREE.MeshPhongMaterial();
+                this.Paredes_Textura = new THREE.TextureLoader().load(this.mat_Paredes);
+                this.Paredes_Material.map = this.Paredes_Textura;
+
+                this.Puertas_Material = new THREE.MeshPhongMaterial();
+                this.Puertas_Textura = new THREE.TextureLoader().load(this.mat_Puertas);
+                this.Puertas_Material.map = this.Puertas_Textura;
+
+                this.Wall1_Geometry = new THREE.BoxGeometry(-10, 20, 50);
+                this.Wall1 = new THREE.Mesh(this.Wall1_Geometry, this.Paredes_Material);
+                this.Wall1_BoundBox = new THREE.Box3();
+                
+                this.Wall5_Geometry = new THREE.BoxGeometry(2, 20, 50);
+                this.Wall5 = new THREE.Mesh(this.Wall5_Geometry, this.Paredes_Material);
+                this.Wall5_BoundBox = new THREE.Box3();
+                
+                this.Wall2_Geometry = new THREE.BoxGeometry(18, 20, 2);
+                this.Wall2 = new THREE.Mesh(this.Wall2_Geometry, this.Paredes_Material);
+                this.Wall2_BoundBox = new THREE.Box3();
+                
+                this.Wall4_Geometry = new THREE.BoxGeometry(18, 20, 2);
+                this.Wall4 = new THREE.Mesh(this.Wall4_Geometry, this.Paredes_Material);
+                this.Wall4_BoundBox = new THREE.Box3();
+                
+                this.Wall8_Geometry = new THREE.BoxGeometry(18, 20, 2);
+                this.Wall8 = new THREE.Mesh(this.Wall8_Geometry, this.Paredes_Material);
+                this.Wall8_BoundBox = new THREE.Box3();
+                
+                this.Wall6_Geometry = new THREE.BoxGeometry(18, 20, 2);
+                this.Wall6 = new THREE.Mesh(this.Wall6_Geometry, this.Paredes_Material);
+                this.Wall6_BoundBox = new THREE.Box3();
+                
+                this.Wall3_Puerta1_Geometry = new THREE.BoxGeometry(10, 20, 2);
+                this.Wall3_Puerta1 = new THREE.Mesh(this.Wall3_Puerta1_Geometry, this.Puertas_Material);
+                this.Wall3_Puerta1_BoundBox = new THREE.Box3();
+                
+                this.Wall7_Puerta2_Geometry = new THREE.BoxGeometry(10, 20, 2);
+                this.Wall7_Puerta2 = new THREE.Mesh(this.Wall7_Puerta2_Geometry, this.Puertas_Material);
+                this.Wall7_Puerta2_BoundBox = new THREE.Box3();
+            }
+
+            Construir_Cuarto(){
+                this.Wall1.position.set(this.positionX + 24, this.positionY + 10, this.positionZ + 0);
+                this.Wall1_BoundBox.setFromObject(this.Wall1);
+                scene.add(this.Wall1);
+                
+                this.Wall5.position.set(this.positionX -24, this.positionY +  10, this.positionZ + 0);
+                this.Wall5_BoundBox.setFromObject(this.Wall5);
+                scene.add(this.Wall5);
+
+                this.Wall2.position.set(this.positionX + 14, this.positionY + 10, this.positionZ - 24);
+                this.Wall2_BoundBox.setFromObject(this.Wall2);
+                scene.add(this.Wall2);
+
+                this.Wall4.position.set(this.positionX -14, this.positionY + 10, this.positionZ - 24);
+                this.Wall4_BoundBox.setFromObject(this.Wall4);
+                scene.add(this.Wall4);
+
+                this.Wall8.position.set(this.positionX + 14, this.positionY + 10, this.positionZ + 24);
+                this.Wall8_BoundBox.setFromObject(this.Wall8);
+                scene.add(this.Wall8);
+
+                this.Wall6.position.set(this.positionX -14, this.positionY + 10, this.positionZ + 24);
+                this.Wall6_BoundBox.setFromObject(this.Wall6);
+                scene.add(this.Wall6);
+
+                this.Wall3_Puerta1.position.set(this.positionX + 0, this.positionY + 10, this.positionZ - 24);
+                this.Wall3_Puerta1_BoundBox.setFromObject(this.Wall3_Puerta1);
+                scene.add(this.Wall3_Puerta1);
+
+                this.Wall7_Puerta2.position.set(this.positionX + 0, this.positionY + 10, this.positionZ + 24);
+                this.Wall7_Puerta2_BoundBox.setFromObject(this.Wall7_Puerta2);
+                scene.add(this.Wall7_Puerta2);
+            }
+
+            Colisiones() {
+                this.Colision_Con_Jugador = false;
+                if(this.Wall1_BoundBox.intersectsBox(this.Player_Temp_BB)) this.Colision_Con_Jugador = true;
+                if(this.Wall2_BoundBox.intersectsBox(this.Player_Temp_BB)) this.Colision_Con_Jugador = true;
+                if(this.Wall3_Puerta1_BoundBox.intersectsBox(this.Player_Temp_BB)) this.Colision_Con_Jugador = true;
+                if(this.Wall4_BoundBox.intersectsBox(this.Player_Temp_BB)) this.Colision_Con_Jugador = true;
+                if(this.Wall5_BoundBox.intersectsBox(this.Player_Temp_BB)) this.Colision_Con_Jugador = true;
+                if(this.Wall6_BoundBox.intersectsBox(this.Player_Temp_BB)) this.Colision_Con_Jugador = true;
+                if(this.Wall8_BoundBox.intersectsBox(this.Player_Temp_BB)) this.Colision_Con_Jugador = true;
+            }
+        }
+        
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87ceeb);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 8, 80);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
+        directionalLight.position.set(10, 15, 5);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.1; 
+        controls.rotateSpeed = 0.4; 
+        controls.enablePan = false;
+        controls.minDistance = 20;
+        controls.maxDistance = 100;
+        controls.maxPolarAngle = Math.PI / 2 - 0.05;
+
+        const clock = new THREE.Clock();
+        const loader = new GLTFLoader();
+
+        let Jugador1;
+        let Jugador1_Mixer;
+        let Jugador1_Action;
+        let Jugador1_Posicion_Anterior = new THREE.Vector3();
+        let Jugador1_BoundBox = new THREE.Box3();
+        let box;
+
+        let Jugador2;
+        let Jugador2_Mixer;
+        let Jugador2_Action;
+        let Jugador2_Posicion_Anterior = new THREE.Vector3();
+        let Jugador2_BoundBox = new THREE.Box3();
+        let box2;
+        
+        let terrenoMeshes = []; 
+        const raycasterSuelo = new THREE.Raycaster();
+        const vectorAbajo = new THREE.Vector3(0, -1, 0); 
+        
+        let velocidadVertical = 0;    
+        const gravedad = -50.0;       
+        const fuerzaSalto = 25.0;
+        let enSuelo = false; 
+
+        loader.load('Personaje/personajeee.glb', (gltf) => {
+            Jugador1 = gltf.scene;        
+            Jugador1.traverse(child => { if (child.isMesh) child.castShadow = true; });
+            Jugador1.scale.set(2, 2, 2);
+            
+            // POSICIÓN INICIAL NIVEL 1
+            Jugador1.position.set(0, 0, 50);
+
+            scene.add(Jugador1);
+            
+            box = new THREE.BoxHelper( Jugador1, 0xffff00 );
+            scene.add( box );
+
+            if (gltf.animations.length) {
+                Jugador1_Mixer = new THREE.AnimationMixer(Jugador1);
+                Jugador1_Action = Jugador1_Mixer.clipAction(gltf.animations[0]);
+                Jugador1_Action.play(); 
+            }
+        }, undefined, (error) => console.error(error));
+
+        //loader.load('Personaje/personajeee.glb', (gltf) => {
+        loader.load('Personaje/jugador2.glb', (gltf) => {
+            Jugador2 = gltf.scene;        
+            Jugador2.traverse(child => { if (child.isMesh) child.castShadow = true; });
+            Jugador2.scale.set(2, 2, 2);
+            
+            // POSICIÓN INICIAL NIVEL 1
+            Jugador2.position.set(0, 0, 50);
+
+            scene.add(Jugador2);
+            
+            box2 = new THREE.BoxHelper( Jugador2, 0xffff00 );
+            scene.add( box2 );
+
+            if (gltf.animations.length) {
+                Jugador2_Mixer = new THREE.AnimationMixer(Jugador2);
+                Jugador2_Action = Jugador2_Mixer.clipAction(gltf.animations[0]);
+                Jugador2_Action.play(); 
+            }
+        }, undefined, (error) => console.error(error));
+
+        // CARGA MAPA NIVEL 1
+        loader.load('mapaconarbolescomobosque/escenario_tipo_bosque.glb', (gltf) => {
+            const mapaBosque = gltf.scene;
+            mapaBosque.scale.set(3, 3, 3); 
+            mapaBosque.position.set(0, -60, 10); 
+
+            mapaBosque.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                    terrenoMeshes.push(child); 
+                }
+            });
+            scene.add(mapaBosque);
+        }, undefined, (error) => console.error(error));
+        
+        const Puzzle_Resuelto_Geometry = new THREE.BoxGeometry(10, 5, 10);
+        const Puzzle_Resuelto_Material = new THREE.MeshPhongMaterial({ color: "white" });
+        const Puzzle_Resuelto = new THREE.Mesh(Puzzle_Resuelto_Geometry, Puzzle_Resuelto_Material);
+        const Puzzle_Resuelto_BoundBox = new THREE.Box3();
+        Puzzle_Resuelto.position.set(0, 0, 0);
+        Puzzle_Resuelto_BoundBox.setFromObject(Puzzle_Resuelto);
+        scene.add(Puzzle_Resuelto);
+
+        let FIN_DEL_NIVEL = false;
+        let Jugador_Victoria = false;
+
+        const Zona_Victoria_Geometry = new THREE.BoxGeometry(10, 5, 10);
+        const Zona_Victoria_Material = new THREE.MeshPhongMaterial({ color: "white" });
+        const Zona_Victoria = new THREE.Mesh(Zona_Victoria_Geometry, Zona_Victoria_Material);
+        const Zona_Victoria_BoundBox = new THREE.Box3();
+        Zona_Victoria.position.set(0, 0, -50);
+        Zona_Victoria_BoundBox.setFromObject(Zona_Victoria);
+        scene.add(Zona_Victoria);
+        
+        const Habitacion_1 = new Cuartos(0,0,0,Jugador1_BoundBox, "./uv_texture.jpg", "./temp_puerta.jpg");
+        Habitacion_1.Construir_Cuarto();
+        
+        let Cambio_De_Mapa = false;
+
+        function checkCollisions() {
+            if(Zona_Victoria_BoundBox.intersectsBox(Jugador1_BoundBox)){
+                Zona_Victoria.material.color = new THREE.Color("black");
+                FIN_DEL_NIVEL = true;
+                Jugador_Victoria = true;
+            }
+            else{
+                Zona_Victoria.material.color = new THREE.Color("white");
+            }
+
+            if(Puzzle_Resuelto_BoundBox.intersectsBox(Jugador1_BoundBox)){
+                Habitacion_1.Cuarto_Terminado = true;
+            }
+        }
+
+        function Nivel_Fue_Ganado(){
+            if(Cambio_De_Mapa == false){
+                location.href = 'GAMEOVER_win_Multi.html';
+                Cambio_De_Mapa = true;
+            }
+        }
+
+        function Nivel_Fue_Perdido(){
+            if(Cambio_De_Mapa == false){
+                location.href = 'GAMEOVER_LOSE_Multi.html';
+                Cambio_De_Mapa = true;
+            }
+        }
+
+        const keyboard = {};
+        document.addEventListener('keydown', (event) => { keyboard[event.code] = true; });
+        document.addEventListener('keyup', (event) => { keyboard[event.code] = false; });
+
+        const keyboard2 = {};
+        document.addEventListener('keydown', (event) => { keyboard2[event.code] = true; });
+        document.addEventListener('keyup', (event) => { keyboard2[event.code] = false; });
+
+        // --- FÍSICAS MEJORADAS (5 Rayos) ---
+        function aplicarFisicas(delta) {
+            if (!Jugador1 || terrenoMeshes.length === 0) return;
+
+            const offsets = [
+                new THREE.Vector3(0, 0, 0),      
+                new THREE.Vector3(0, 0, 1),      
+                new THREE.Vector3(0, 0, -1),     
+                new THREE.Vector3(0.5, 0, 0),    
+                new THREE.Vector3(-0.5, 0, 0)    
+            ];
+
+            let sueloDetectado = false;
+            let alturaSuelo = -99999;
+
+            for (let i = 0; i < offsets.length; i++) {
+                const origenRayo = Jugador1.position.clone().add(offsets[i]);
+                origenRayo.y += 5.0; 
+                
+                raycasterSuelo.set(origenRayo, vectorAbajo);
+                const intersecciones = raycasterSuelo.intersectObjects(terrenoMeshes, true);
+
+                if (intersecciones.length > 0) {
+                    const hit = intersecciones[0];
+                    if (hit.distance < 6.0) {
+                        if (hit.point.y > alturaSuelo) {
+                            alturaSuelo = hit.point.y;
+                            sueloDetectado = true;
+                        }
+                    }
+                }
+            }
+
+            if (sueloDetectado) {
+                if (velocidadVertical <= 0) {
+                    enSuelo = true;
+                    velocidadVertical = 0; 
+                    if (Math.abs(Jugador1.position.y - alturaSuelo) < 2.0) {
+                        Jugador1.position.y = alturaSuelo;
+                    }
+                } else {
+                    enSuelo = false;
+                    velocidadVertical += gravedad * delta; 
+                    Jugador1.position.y += velocidadVertical * delta; 
+                }
+            } else {
+                enSuelo = false;
+                velocidadVertical += gravedad * delta; 
+                Jugador1.position.y += velocidadVertical * delta; 
+            }
+
+            if (Jugador1.position.y < -300) {
+                FIN_DEL_NIVEL = true;
+                 Jugador_Victoria = false; 
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // --- LÓGICA DE PAUSA ---
+            if (juegoPausado) {
+                renderer.render(scene, camera);
+                return; // Detiene la actualización del juego
+            }
+
+            const delta = clock.getDelta();
+
+            if (FIN_DEL_NIVEL) {
+                Set_NivelActual();
+                if (Jugador_Victoria == true) Nivel_Fue_Ganado();
+                else Nivel_Fue_Perdido();
+            } else {
+                if (Jugador1) {
+                    Jugador1_BoundBox.setFromObject(Jugador1);
+                    Jugador1_Posicion_Anterior.copy(Jugador1.position);
+                    Jugador2_BoundBox.setFromObject(Jugador2);
+                    //Jugador2_Posicion_Anterior.copy(Jugador2.position);
+
+                    // DEBUG
+                    const infoDiv = document.getElementById('debugInfo');
+                    if (infoDiv) {
+                        infoDiv.innerText = `X: ${Jugador1.position.x.toFixed(2)} | Y: ${Jugador1.position.y.toFixed(2)} | Z: ${Jugador1.position.z.toFixed(2)}`;
+                    }
+
+                    // SALTO
+                    if (keyboard['Space'] && enSuelo) {
+                        velocidadVertical = fuerzaSalto;
+                        enSuelo = false; 
+                    }
+
+                    // FÍSICAS
+                    aplicarFisicas(delta);
+
+                    // MOVIMIENTO
+                    const moveSpeed = 1.0;
+                    
+                    const camForward = new THREE.Vector3();
+                    camera.getWorldDirection(camForward);
+                    camForward.y = 0;
+                    camForward.normalize();
+
+                    const camRight = new THREE.Vector3();
+                    camRight.crossVectors(camForward, new THREE.Vector3(0, 1, 0));
+
+                    const direction = new THREE.Vector3(0, 0, 0);
+                    const direction2 = new THREE.Vector3(0, 0, 0);
+
+                    if (keyboard['KeyW']) direction.add(camForward);
+                    if (keyboard['KeyS']) direction.sub(camForward);
+                    if (keyboard['KeyD']) direction.add(camRight);
+                    if (keyboard['KeyA']) direction.sub(camRight);
+
+                    if (direction.lengthSq() > 0) {
+                        direction.normalize();
+                        Jugador1.position.addScaledVector(direction, moveSpeed);
+
+                        const targetRotation = new THREE.Quaternion();
+                        const rotationMatrix = new THREE.Matrix4();
+                        rotationMatrix.lookAt(direction, new THREE.Vector3(0,0,0), new THREE.Vector3(0,1,0));
+                        targetRotation.setFromRotationMatrix(rotationMatrix);
+                        Jugador1.quaternion.slerp(targetRotation, 15 * delta);
+                        
+                        if (enSuelo && Jugador1_Action && !Jugador1_Action.isRunning()) {
+                            Jugador1_Action.play();
+                        }
+                        if(Jugador1_Mixer) Jugador1_Mixer.update(delta);
+
+                    } else {
+                        if (Jugador1_Action && Jugador1_Action.isRunning()) {
+                            Jugador1_Action.stop();
+                        }
+                    }
+
+                    if (keyboard2['KeyI']) direction2.add(camForward);
+                    if (keyboard2['KeyK']) direction2.sub(camForward);
+                    if (keyboard2['KeyL']) direction2.add(camRight);
+                    if (keyboard2['KeyJ']) direction2.sub(camRight);
+
+                    if (direction2.lengthSq() > 0) {
+                        direction2.normalize();
+                        Jugador2.position.addScaledVector(direction2, moveSpeed);
+
+                        const targetRotation = new THREE.Quaternion();
+                        const rotationMatrix = new THREE.Matrix4();
+                        rotationMatrix.lookAt(direction2, new THREE.Vector3(0,0,0), new THREE.Vector3(0,1,0));
+                        targetRotation.setFromRotationMatrix(rotationMatrix);
+                        Jugador2.quaternion.slerp(targetRotation, 15 * delta);
+                        
+                        if (enSuelo && Jugador2_Action && !Jugador2_Action.isRunning()) {
+                            Jugador2_Action.play();
+                        }
+                        if(Jugador2_Mixer) Jugador2_Mixer.update(delta);
+
+                    } else {
+                        if (Jugador2_Action && Jugador2_Action.isRunning()) {
+                            Jugador2_Action.stop();
+                        }
+                    }
+
+                    Jugador1_BoundBox.setFromObject(Jugador1);
+                    Jugador2_BoundBox.setFromObject(Jugador2);
+                    box.update();
+                    box2.update();
+                }
+
+                checkCollisions();
+                Habitacion_1.Colisiones();
+
+                if (Habitacion_1.Colision_Con_Jugador == true && Jugador1) {
+                    const currentY = Jugador1.position.y;
+                    Jugador1.position.copy(Jugador1_Posicion_Anterior);
+                    Jugador1.position.y = currentY;
+                }
+
+                if (Jugador1) {
+                    controls.target.copy(Jugador1.position).add(new THREE.Vector3(0, 10, 0));
+                    controls.update();
+                }
+            }
+
+            if (Habitacion_1.Cuarto_Terminado == true) {
+                Habitacion_1.Wall3_Puerta1.position.y = -20;
+                Habitacion_1.Wall7_Puerta2.position.y = -30;
+            } else {
+                Habitacion_1.Wall3_Puerta1.position.y = 10;
+                Habitacion_1.Wall7_Puerta2.position.y = -30;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>

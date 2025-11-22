@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Niveles Puzzlos</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="Niveles_style.css">
+</head>
+<body id="Body_nivel1">
+
+    <audio id="musicaFondo" loop>
+        <source src="index.mp3" type="audio/mpeg">
+    </audio>
+    <i class="Cofre_Clase"></i>
+
+    <div class="Opciones-container">
+        <img id="Menu_icono" src="3 rayas.png" alt="Icono de Menú" width="50px" height="50px">
+        <div class="opcion-item volume-control hidden">
+            <label for="volume-slider">Volumen</label>
+            <input type="range" id="volume-slider" min="0" max="100" value="100">
+        </div>
+        <div class="opcion-item checkbox-control hidden">
+            <span>Música</span>
+            <label class="switch">
+                <input type="checkbox" checked>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden">Puntuaciones</button>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden" onclick="location.href='index.html#achievements';">Logros</button>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden">Guardar Partida</button>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden" onclick="location.href='index.html';">Salir</button>
+        <hr class="opcion-item hidden">
+        <button class="Opciones-button opcion-item hidden">Reiniciar</button>
+    </div>
+
+    <div id="game-elements"> 
+        <h1>Puzzlos</h1>
+        <div class="menu-container">
+            <div class="level-selector">
+                <img id="arrow_icon_l" src="right_arrow.png" alt="Flecha Izquierda" width="50px" height="50px">
+                <button id="levelButton" class="menu-button">Nivel 1</button>
+                <img id="arrow_icon_r" src="right_arrow.png" alt="Flecha Derecha" width="50px" height="50px">
+            </div>
+        </div>
+    </div>
+
+    <div id="game-over-screen" class="hidden"> 
+        <div class="game-over-content">
+            <h1>Game Over</h1>
+            <div class="game-over-buttons">
+                <button id="playAgainButton" class="menu-button">Jugar de nuevo</button>
+                <button class="menu-button" onclick="location.href='index.html';">Salir</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="level-complete-screen" class="hidden"> 
+        <div class="game-over-content">
+            <h1>Nivel Completado</h1>
+            
+            <div class="PublicarPuntaje">
+            
+                <div class="AreaPuntaje">
+                    <h2>Tu puntaje fue "58900"</h2>
+                    <h3>¡Hay que compartirlo! Ingresa un <span class="AreaPuntaje_Nombre">Nombre</span></h3>
+                    
+                    <div class="AreaPuntaje_Mensaje">
+                        "Soy <input type="text" name="Usuario_Nombre" id="Usuario_Nombre" value="Usuario_Nombre" /> y mi puntaje fué
+                        <span id="Usuario_Calificacion">[58900]</span>.
+                        <span class="AreaPuntaje_Acentuar">¿Crees poder derrotarme?</span> ¡Juega Ya!"
+                    </div>
+                    <br>
+                
+                    <!-- <button type="button">Compartir Puntaje</button> -->
+                    <!-- <input type="button" value="Compartir Puntaje" onclick="EnviarPuntaje();"> -->
+                
+                    <img class="AreaPuntaje_Facebook" src="/facebookIcon.webp" alt=""><button id="postButton">Compartir Puntaje</button>
+                </div>
+            
+            </div>
+            
+            
+
+
+
+            <div class="game-over-buttons">
+                <button id="nextLevelButton" class="menu-button">Siguiente Nivel</button>
+                <button class="menu-button" onclick="location.href='index.html';">Salir</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const toggleButton = document.getElementById('Menu_icono');
+        const targetElements = document.querySelectorAll('.opcion-item');
+
+        toggleButton.addEventListener('click', () => {
+            targetElements.forEach(element => {
+                element.classList.toggle('hidden');
+            });
+        });
+    });
+
+    const body = document.body;
+    const levelButton = document.getElementById('levelButton');
+    const arrowLeft = document.getElementById('arrow_icon_l');
+    const arrowRight = document.getElementById('arrow_icon_r');
+    const gameElements = document.getElementById('game-elements');
+    const gameOverScreen = document.getElementById('game-over-screen');
+    const levelCompleteScreen = document.getElementById('level-complete-screen');
+    const playAgainButton = document.getElementById('playAgainButton');
+    const nextLevelButton = document.getElementById('nextLevelButton');
+
+    const levels = [
+        { id: 'Body_nivel1', text: 'Nivel 1' },
+        { id: 'Body_nivel2', text: 'Nivel 2' },
+        { id: 'Body_nivel3', text: 'Nivel 3' }
+    ];
+    let currentLevel = 0; 
+    function updateLevelView() {
+        const levelData = levels[currentLevel];
+        body.id = levelData.id; 
+        levelButton.textContent = levelData.text; 
+    }
+    arrowRight.addEventListener('click', () => {
+        currentLevel = (currentLevel + 1) % levels.length;
+        updateLevelView();
+    });
+    arrowLeft.addEventListener('click', () => {
+        currentLevel = (currentLevel - 1 + levels.length) % levels.length;
+        updateLevelView();
+    });
+
+    levelButton.addEventListener('click', () => {
+        if (currentLevel === 0) { 
+            //gameElements.classList.add('hidden');
+            //gameOverScreen.classList.remove('hidden');
+            //body.classList.add('game-over-background');
+
+            location.href = 'new_LEVEL_1_MULTIJUGADOR.html';
+
+        } else if (currentLevel === 1) { 
+            //gameElements.classList.add('hidden');
+            //levelCompleteScreen.classList.remove('hidden');
+            //body.classList.add('level-complete-background');
+
+            location.href = 'new_LEVEL_2 MULTIJUGADOR.html';
+        } else if (currentLevel === 2) { 
+            
+            location.href = 'new_LEVEL_3_MULTIJUGADOR.html';
+        } else {
+            
+            alert('¡Este nivel estará disponible próximamente!');
+        }
+    });
+    
+
+    // =====================================================
+            // --- SISTEMA DE AUDIO PERSISTENTE ENTRE PÁGINAS ---
+            // =====================================================
+            
+            const audio = document.getElementById('musicaFondo');
+            const sliderVolumen = document.getElementById('volume-slider');
+            const checkMusica = document.querySelector('.checkbox-control input');
+
+            // --- PARTE A: RECUPERAR EL ESTADO ANTERIOR ---
+            // Leemos la memoria del navegador al cargar la página
+            const volumenGuardado = localStorage.getItem('volumenGlobal');
+            const tiempoGuardado = localStorage.getItem('musicaTiempo');
+            const estabaSonando = localStorage.getItem('musicaSonando');
+
+            // 1. Restaurar Volumen
+            if (volumenGuardado !== null) {
+                audio.volume = parseFloat(volumenGuardado);
+                sliderVolumen.value = audio.volume * 100;
+            } else {
+                audio.volume = 0.75; // Valor por defecto
+            }
+
+            // 2. Restaurar Tiempo (Para que la canción no empiece de 0)
+            if (tiempoGuardado !== null) {
+                audio.currentTime = parseFloat(tiempoGuardado);
+            }
+
+            // 3. Restaurar Reproducción (Play/Pause)
+            if (estabaSonando === 'true') {
+                checkMusica.checked = true;
+                // Intentamos reproducir. Los navegadores modernos a veces bloquean esto
+                // hasta que el usuario hace clic, pero como viene de un clic anterior, suele funcionar.
+                var playPromise = audio.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log("Esperando interacción del usuario para reproducir audio...");
+                        // Si falla (bloqueo de navegador), esperamos al primer clic en cualquier lado
+                        document.body.addEventListener('click', () => {
+                            audio.play();
+                        }, { once: true });
+                    });
+                }
+            } else {
+                checkMusica.checked = false; 
+                // Si el usuario la apagó en la otra página, la dejamos apagada.
+            }
+
+            // --- PARTE B: GUARDAR EL ESTADO AL SALIR ---
+            // Este evento ocurre justo antes de cambiar de página (ej. al hacer clic en "Jugar")
+            window.addEventListener("beforeunload", () => {
+                // Si la música está sonando, guardamos el tiempo exacto
+                if (!audio.paused) {
+                    localStorage.setItem('musicaTiempo', audio.currentTime);
+                    localStorage.setItem('musicaSonando', 'true');
+                } else {
+                    localStorage.setItem('musicaSonando', 'false');
+                }
+                localStorage.setItem('volumenGlobal', audio.volume);
+            });
+
+            // --- PARTE C: CONTROLES NORMALES ---
+            sliderVolumen.addEventListener('input', function() {
+                audio.volume = this.value / 100;
+                // Guardamos el volumen en tiempo real por si recarga la página
+                localStorage.setItem('volumenGlobal', audio.volume);
+            });
+
+            checkMusica.addEventListener('change', function() {
+                if (this.checked) {
+                    audio.play();
+                    localStorage.setItem('musicaSonando', 'true');
+                } else {
+                    audio.pause();
+                    localStorage.setItem('musicaSonando', 'false');
+                }
+            });
+
+
+    
+</script>
+
+
+</body>
+</html>
