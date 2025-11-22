@@ -4,25 +4,36 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Nivel 1</title>
+    <title>Nivel 1 - PowerUps</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="stylesheet" href="Niveles_style.css">
     <style>
-        body {
-            margin: 0;
-        }
+        body { margin: 0; overflow: hidden; }
         #debugInfo {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background-color: rgba(0, 0, 0, 0.7);
-            color: #00ff00;
-            padding: 10px;
-            font-family: monospace;
-            font-size: 16px;
-            z-index: 2000;
-            border-radius: 5px;
-            pointer-events: none;
+            position: fixed; top: 10px; left: 10px;
+            background-color: rgba(0, 0, 0, 0.7); color: #00ff00;
+            padding: 10px; font-family: monospace; font-size: 16px;
+            z-index: 2000; border-radius: 5px; pointer-events: none;
+        }
+        #gameTimer {
+            position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7); color: #ffffff;
+            padding: 10px 20px; font-family: monospace; font-size: 24px;
+            font-weight: bold; z-index: 2000; border-radius: 10px;
+            pointer-events: none; border: 2px solid #ffffff;
+        }
+        /* Efectos visuales */
+        .effect-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0; pointer-events: none; transition: opacity 0.5s; z-index: 1999;
+        }
+        #slowTimeEffect { background-color: cyan; } 
+        #goodEffect { background-color: lime; }     
+        #badEffect { background-color: red; }       
+        .damage-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: red; opacity: 0; pointer-events: none;
+            transition: opacity 0.2s; z-index: 1999;
         }
     </style>
 </head>
@@ -33,6 +44,12 @@
     </audio>
 
     <div id="debugInfo">Posición: Cargando...</div>
+    <div id="gameTimer">00:00</div>
+    
+    <div id="slowTimeEffect" class="effect-overlay"></div>
+    <div id="goodEffect" class="effect-overlay"></div>
+    <div id="badEffect" class="effect-overlay"></div>
+    <div id="damageEffect" class="damage-overlay"></div>
 
     <i class="Cofre_Clase"></i>
     <div class="Opciones-container">
@@ -51,8 +68,7 @@
         <hr class="opcion-item hidden">
         <button class="Opciones-button opcion-item hidden">Puntuaciones</button>
         <hr class="opcion-item hidden">
-        <button id="achievementsButton" class="Opciones-button opcion-item hidden"
-            onclick="location.href='index.html#achievements';">Logros</button>
+        <button id="achievementsButton" class="Opciones-button opcion-item hidden" onclick="location.href='index.html#achievements';">Logros</button>
         <hr class="opcion-item hidden">
         <button class="Opciones-button opcion-item hidden">Guardar Partida</button>
         <hr class="opcion-item hidden">
@@ -62,180 +78,137 @@
     </div>
 
     <script type="module">
+        // Función global para guardar nivel
         function Set_NivelActual() {
             var VAR_Nivel_Actual = 1;
-            localStorage.setItem("Nivel_Actual",VAR_Nivel_Actual);
+            localStorage.setItem("Nivel_Actual", VAR_Nivel_Actual);
         }
         
         import * as THREE from "./three.module.js";
         import { OrbitControls } from "./OrbitControls.js";
         import { GLTFLoader } from "./GLTFLoader.js";
         
-        // --- VARIABLE DE PAUSA ---
+        // ==========================================
+        // VARIABLES GLOBALES
+        // ==========================================
         let juegoPausado = false;
+        let tiempoTranscurrido = 0;
+        let tiempoScale = 1.0;
+        let slowTimeTimer = 0;
 
-        // --- LÓGICA DEL MENÚ Y PAUSA ---
+        // PowerUps
+        const powerUpsActivos = []; 
+        let powerUpModels = {}; 
+        let spawnTimer = 0;
+        const SPAWN_INTERVAL = 3.0;
+
+        // ==========================================
+        // 1. MENÚ, PAUSA Y AUDIO
+        // ==========================================
         const toggleButton = document.getElementById('Menu_icono');
         const targetElements = document.querySelectorAll('.opcion-item');
+        const clock = new THREE.Clock();
 
         toggleButton.addEventListener('click', () => {
-            // 1. Mostrar/Ocultar menú
-            targetElements.forEach(element => {
-                element.classList.toggle('hidden');
-            });
-
-            // 2. Alternar Pausa
+            targetElements.forEach(element => { element.classList.toggle('hidden'); });
             juegoPausado = !juegoPausado;
-
-            // 3. Resetear reloj al reanudar para evitar saltos bruscos
-            if (!juegoPausado) {
-                clock.getDelta();
-            }
+            if (!juegoPausado) clock.getDelta();
         });
 
-        // --- LÓGICA DE AUDIO ---
+        // Audio Config
         const audio = document.getElementById('musicaFondo');
         const sliderVolumen = document.getElementById('volume-slider');
         const checkMusica = document.querySelector('.checkbox-control input');
-
-        const volumenGuardado = localStorage.getItem('volumenGlobal');
-        const estabaSonando = localStorage.getItem('musicaSonando');
-
-        if (volumenGuardado !== null) {
-            audio.volume = parseFloat(volumenGuardado);
-            sliderVolumen.value = audio.volume * 100;
-        } else {
-            audio.volume = 0.75;
-        }
-
-        if (estabaSonando === 'true') {
-            checkMusica.checked = true;
-            var playPromise = audio.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    document.body.addEventListener('click', () => {
-                        audio.play();
-                    }, { once: true });
-                });
+        
+        // Intentar recuperar config
+        try {
+            const vol = localStorage.getItem('volumenGlobal');
+            const snd = localStorage.getItem('musicaSonando');
+            if (vol !== null) { audio.volume = parseFloat(vol); sliderVolumen.value = audio.volume * 100; }
+            else { audio.volume = 0.75; }
+            
+            if (snd === 'true') {
+                checkMusica.checked = true;
+                audio.play().catch(e => { /* Autoplay bloqueado, ignorar */ });
+            } else {
+                checkMusica.checked = false;
             }
-        } else {
-            checkMusica.checked = false;
-        }
+        } catch(e) { console.log("Error cargando audio pref", e); }
 
         sliderVolumen.addEventListener('input', function() {
             audio.volume = this.value / 100;
             localStorage.setItem('volumenGlobal', audio.volume);
         });
-
         checkMusica.addEventListener('change', function() {
-            if (this.checked) {
-                audio.play();
-                localStorage.setItem('musicaSonando', 'true');
-            } else {
-                audio.pause();
-                localStorage.setItem('musicaSonando', 'false');
-            }
+            if (this.checked) { audio.play(); localStorage.setItem('musicaSonando', 'true'); }
+            else { audio.pause(); localStorage.setItem('musicaSonando', 'false'); }
         });
 
-        // --- CLASE CUARTOS ---
-        class Cuartos{
-            constructor(positionX, positionY, positionZ, Player_BB, mat_Paredes, mat_Puertas){
-                this.positionX = positionX;
-                this.positionY = positionY;
-                this.positionZ = positionZ;
-                this.mat_Paredes = mat_Paredes;
-                this.mat_Puertas = mat_Puertas;
-                this.Cuarto_Terminado = false;
-                this.Colision_Con_Jugador = false;
-                this.Player_Temp_BB = Player_BB;
+        // ==========================================
+        // 2. CLASE CUARTOS (ESCENARIO)
+        // ==========================================
+        class Cuartos {
+            constructor(posX, posY, posZ, playerBB, matPared, matPuerta) {
+                this.posX = posX; this.posY = posY; this.posZ = posZ;
+                this.playerBB = playerBB;
+                this.colision = false;
 
-                this.Paredes_Material = new THREE.MeshPhongMaterial();
-                this.Paredes_Textura = new THREE.TextureLoader().load(this.mat_Paredes);
-                this.Paredes_Material.map = this.Paredes_Textura;
-
-                this.Puertas_Material = new THREE.MeshPhongMaterial();
-                this.Puertas_Textura = new THREE.TextureLoader().load(this.mat_Puertas);
-                this.Puertas_Material.map = this.Puertas_Textura;
-
-                this.Wall1_Geometry = new THREE.BoxGeometry(2, 20, 50);
-                this.Wall1 = new THREE.Mesh(this.Wall1_Geometry, this.Paredes_Material);
-                this.Wall1_BoundBox = new THREE.Box3();
+                this.mat1 = new THREE.MeshPhongMaterial();
+                this.mat1.map = new THREE.TextureLoader().load(matPared);
+                this.mat2 = new THREE.MeshPhongMaterial();
+                this.mat2.map = new THREE.TextureLoader().load(matPuerta);
                 
-                this.Wall5_Geometry = new THREE.BoxGeometry(2, 20, 50);
-                this.Wall5 = new THREE.Mesh(this.Wall5_Geometry, this.Paredes_Material);
-                this.Wall5_BoundBox = new THREE.Box3();
-                
-                this.Wall2_Geometry = new THREE.BoxGeometry(18, 20, 2);
-                this.Wall2 = new THREE.Mesh(this.Wall2_Geometry, this.Paredes_Material);
-                this.Wall2_BoundBox = new THREE.Box3();
-                
-                this.Wall4_Geometry = new THREE.BoxGeometry(18, 20, 2);
-                this.Wall4 = new THREE.Mesh(this.Wall4_Geometry, this.Paredes_Material);
-                this.Wall4_BoundBox = new THREE.Box3();
-                
-                this.Wall8_Geometry = new THREE.BoxGeometry(18, 20, 2);
-                this.Wall8 = new THREE.Mesh(this.Wall8_Geometry, this.Paredes_Material);
-                this.Wall8_BoundBox = new THREE.Box3();
-                
-                this.Wall6_Geometry = new THREE.BoxGeometry(18, 20, 2);
-                this.Wall6 = new THREE.Mesh(this.Wall6_Geometry, this.Paredes_Material);
-                this.Wall6_BoundBox = new THREE.Box3();
-                
-                this.Wall3_Puerta1_Geometry = new THREE.BoxGeometry(10, 20, 2);
-                this.Wall3_Puerta1 = new THREE.Mesh(this.Wall3_Puerta1_Geometry, this.Puertas_Material);
-                this.Wall3_Puerta1_BoundBox = new THREE.Box3();
-                
-                this.Wall7_Puerta2_Geometry = new THREE.BoxGeometry(10, 20, 2);
-                this.Wall7_Puerta2 = new THREE.Mesh(this.Wall7_Puerta2_Geometry, this.Puertas_Material);
-                this.Wall7_Puerta2_BoundBox = new THREE.Box3();
+                this.walls = [];
+                this.crearParedes();
             }
 
-            Construir_Cuarto(){
-                this.Wall1.position.set(this.positionX + 24, this.positionY + 10, this.positionZ + 0);
-                this.Wall1_BoundBox.setFromObject(this.Wall1);
-                scene.add(this.Wall1);
-                
-                this.Wall5.position.set(this.positionX -24, this.positionY +  10, this.positionZ + 0);
-                this.Wall5_BoundBox.setFromObject(this.Wall5);
-                scene.add(this.Wall5);
+            crearParedes() {
+                const create = (w, h, d, mat, x, y, z) => {
+                    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+                    mesh.position.set(this.posX + x, this.posY + y, this.posZ + z);
+                    const box = new THREE.Box3().setFromObject(mesh);
+                    return { mesh, box };
+                };
+                // Definir paredes
+                this.walls.push(create(2, 20, 50, this.mat1, 24, 10, 0));
+                this.walls.push(create(2, 20, 50, this.mat1, -24, 10, 0));
+                this.walls.push(create(18, 20, 2, this.mat1, 14, 10, -24));
+                this.walls.push(create(18, 20, 2, this.mat1, -14, 10, -24));
+                this.walls.push(create(18, 20, 2, this.mat1, 14, 10, 24));
+                this.walls.push(create(18, 20, 2, this.mat1, -14, 10, 24));
+                this.wallDoor1 = create(10, 20, 2, this.mat2, 0, 10, -24); // Puerta 1
+                this.wallDoor2 = create(10, 20, 2, this.mat2, 0, 10, 24);  // Puerta 2
+                this.walls.push(this.wallDoor1);
+                this.walls.push(this.wallDoor2);
+            }
 
-                this.Wall2.position.set(this.positionX + 14, this.positionY + 10, this.positionZ - 24);
-                this.Wall2_BoundBox.setFromObject(this.Wall2);
-                scene.add(this.Wall2);
-
-                this.Wall4.position.set(this.positionX -14, this.positionY + 10, this.positionZ - 24);
-                this.Wall4_BoundBox.setFromObject(this.Wall4);
-                scene.add(this.Wall4);
-
-                this.Wall8.position.set(this.positionX + 14, this.positionY + 10, this.positionZ + 24);
-                this.Wall8_BoundBox.setFromObject(this.Wall8);
-                scene.add(this.Wall8);
-
-                this.Wall6.position.set(this.positionX -14, this.positionY + 10, this.positionZ + 24);
-                this.Wall6_BoundBox.setFromObject(this.Wall6);
-                scene.add(this.Wall6);
-
-                this.Wall3_Puerta1.position.set(this.positionX + 0, this.positionY + 10, this.positionZ - 24);
-                this.Wall3_Puerta1_BoundBox.setFromObject(this.Wall3_Puerta1);
-                scene.add(this.Wall3_Puerta1);
-
-                this.Wall7_Puerta2.position.set(this.positionX + 0, this.positionY + 10, this.positionZ + 24);
-                this.Wall7_Puerta2_BoundBox.setFromObject(this.Wall7_Puerta2);
-                scene.add(this.Wall7_Puerta2);
+            Construir_Cuarto() {
+                this.walls.forEach(w => scene.add(w.mesh));
             }
 
             Colisiones() {
-                this.Colision_Con_Jugador = false;
-                if(this.Wall1_BoundBox.intersectsBox(this.Player_Temp_BB)) this.Colision_Con_Jugador = true;
-                if(this.Wall2_BoundBox.intersectsBox(this.Player_Temp_BB)) this.Colision_Con_Jugador = true;
-                if(this.Wall3_Puerta1_BoundBox.intersectsBox(this.Player_Temp_BB)) this.Colision_Con_Jugador = true;
-                if(this.Wall4_BoundBox.intersectsBox(this.Player_Temp_BB)) this.Colision_Con_Jugador = true;
-                if(this.Wall5_BoundBox.intersectsBox(this.Player_Temp_BB)) this.Colision_Con_Jugador = true;
-                if(this.Wall6_BoundBox.intersectsBox(this.Player_Temp_BB)) this.Colision_Con_Jugador = true;
-                if(this.Wall8_BoundBox.intersectsBox(this.Player_Temp_BB)) this.Colision_Con_Jugador = true;
+                this.colision = false;
+                for (let w of this.walls) {
+                    if (w.box.intersectsBox(this.playerBB)) {
+                        this.colision = true; break;
+                    }
+                }
+            }
+            
+            AnimarPuertas(terminado) {
+                if(terminado) {
+                    this.wallDoor1.mesh.position.y = -20;
+                    this.wallDoor2.mesh.position.y = -30;
+                } else {
+                    this.wallDoor1.mesh.position.y = 10;
+                    this.wallDoor2.mesh.position.y = -30;
+                }
             }
         }
-        
+
+        // ==========================================
+        // 3. INICIALIZACIÓN THREE.JS
+        // ==========================================
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87ceeb);
 
@@ -249,290 +222,354 @@
 
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
         scene.add(ambientLight);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
-        directionalLight.position.set(10, 15, 5);
-        directionalLight.castShadow = true;
-        scene.add(directionalLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+        dirLight.position.set(10, 15, 5);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
 
         const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.1; 
-        controls.rotateSpeed = 0.4; 
-        controls.enablePan = false;
-        controls.minDistance = 20;
-        controls.maxDistance = 100;
+        controls.enableDamping = true; controls.dampingFactor = 0.1; controls.rotateSpeed = 0.4;
+        controls.enablePan = false; controls.minDistance = 20; controls.maxDistance = 100;
         controls.maxPolarAngle = Math.PI / 2 - 0.05;
 
-        const clock = new THREE.Clock();
         const loader = new GLTFLoader();
 
-        let Jugador1;
-        let Jugador1_Mixer;
-        let Jugador1_Action;
-        let Jugador1_Posicion_Anterior = new THREE.Vector3();
-        let Jugador1_BoundBox = new THREE.Box3();
-        let box;
-        
-        let terrenoMeshes = []; 
+        // ==========================================
+        // 4. VARIABLES JUEGO
+        // ==========================================
+        let Jugador1, Jugador1_Mixer, Jugador1_Action;
+        let Jugador1_PosAnterior = new THREE.Vector3();
+        let Jugador1_BB = new THREE.Box3();
+        let boxHelper;
+
+        let Serpiente, Serpiente_Mixer;
+        let Serpiente_BB = new THREE.Box3();
+        let Serpiente_Cooldown = false;
+        let Serpiente_Velocidad = 0.08;
+
+        let terrenoMeshes = [];
         const raycasterSuelo = new THREE.Raycaster();
-        const vectorAbajo = new THREE.Vector3(0, -1, 0); 
+        const vectorAbajo = new THREE.Vector3(0, -1, 0);
         
-        let velocidadVertical = 0;    
-        const gravedad = -50.0;       
+        let velocidadVertical = 0;
+        const gravedad = -50.0;
         const fuerzaSalto = 25.0;
-        let enSuelo = false; 
+        let enSuelo = false;
 
+        // ==========================================
+        // 5. CARGA DE MODELOS
+        // ==========================================
+        
+        // Cargar PowerUps (Manejo de errores incluido)
+        // --- CARGA DE MODELOS DE POWERUPS ---
+        
+        // Ahora la función recibe un tercer parámetro: 'escala'
+        function cargarPowerUp(path, name, escala) {
+            loader.load(path, (gltf) => {
+                const m = gltf.scene;
+                
+                // Usamos la escala personalizada que le pasamos
+                m.scale.set(escala, escala, escala);
+                
+                m.traverse(c => { 
+                    if(c.isMesh) {
+                        c.castShadow = true; 
+                        // Les damos brillo para que se vean mejor
+                        c.material.emissive = new THREE.Color(0.5, 0.5, 0.5);
+                    }
+                });
+                
+                powerUpModels[name] = m;
+                console.log(`Modelo ${name} cargado con escala ${escala}`);
+            }, undefined, (err) => {
+                console.warn(`Error cargando ${name}:`, err);
+            });
+        }
+        
+        // AJUSTA LOS NÚMEROS AQUÍ SEGÚN LO QUE NECESITES:
+        // Si Agility se veía gigante, lo bajamos a 1.0
+        cargarPowerUp('PowerUp1/agility_up.glb', 'timeSlow', 1.0);
+        
+        // Si Health se veía bien en 5, lo dejamos en 5.0
+        cargarPowerUp('PowerUp2/health.glb', 'timeMinus', 5.0);
+        
+        // Si Bomb no se veía, lo hacemos GIGANTE (prueba con 15 o 20)
+        cargarPowerUp('PowerUp3/bomb.glb', 'timePlus', 15.0);
+
+        // Cargar Jugador
         loader.load('Personaje/personajeee.glb', (gltf) => {
-            Jugador1 = gltf.scene;        
-            Jugador1.traverse(child => { if (child.isMesh) child.castShadow = true; });
-            Jugador1.scale.set(2, 2, 2);
-            
-            // POSICIÓN INICIAL NIVEL 1
+            Jugador1 = gltf.scene;
+            Jugador1.traverse(c => { if(c.isMesh) c.castShadow = true; });
+            Jugador1.scale.set(1, 1, 1);
             Jugador1.position.set(0, 0, 50);
-
             scene.add(Jugador1);
             
-            box = new THREE.BoxHelper( Jugador1, 0xffff00 );
-            scene.add( box );
+            boxHelper = new THREE.BoxHelper(Jugador1, 0xffff00);
+            scene.add(boxHelper);
 
             if (gltf.animations.length) {
                 Jugador1_Mixer = new THREE.AnimationMixer(Jugador1);
                 Jugador1_Action = Jugador1_Mixer.clipAction(gltf.animations[0]);
-                Jugador1_Action.play(); 
+                Jugador1_Action.play();
             }
-        }, undefined, (error) => console.error(error));
+        });
 
-        // CARGA MAPA NIVEL 1
+        // Cargar Serpiente
+        loader.load('snake/source/snake.glb', (gltf) => {
+            Serpiente = gltf.scene;
+            Serpiente.traverse(c => { if(c.isMesh) c.castShadow = true; });
+            Serpiente.scale.set(0.5, 0.5, 0.5);
+            Serpiente.position.set(20, 0, 20);
+            scene.add(Serpiente);
+            if (gltf.animations.length) {
+                Serpiente_Mixer = new THREE.AnimationMixer(Serpiente);
+                Serpiente_Mixer.clipAction(gltf.animations[0]).play();
+            }
+        }, undefined, (err) => console.warn("Falta modelo snake:", err));
+
+        // Cargar Mapa
         loader.load('mapaconarbolescomobosque/escenario_tipo_bosque.glb', (gltf) => {
-            const mapaBosque = gltf.scene;
-            mapaBosque.scale.set(3, 3, 3); 
-            mapaBosque.position.set(0, -60, 10); 
-
-            mapaBosque.traverse((child) => {
-                if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                    terrenoMeshes.push(child); 
+            const mapa = gltf.scene;
+            mapa.scale.set(3, 3, 3);
+            mapa.position.set(0, -60, 10);
+            mapa.traverse(c => {
+                if (c.isMesh) {
+                    c.castShadow = true; c.receiveShadow = true;
+                    terrenoMeshes.push(c);
                 }
             });
-            scene.add(mapaBosque);
-        }, undefined, (error) => console.error(error));
-        
-        const Puzzle_Resuelto_Geometry = new THREE.BoxGeometry(10, 5, 10);
-        const Puzzle_Resuelto_Material = new THREE.MeshPhongMaterial({ color: "white" });
-        const Puzzle_Resuelto = new THREE.Mesh(Puzzle_Resuelto_Geometry, Puzzle_Resuelto_Material);
-        const Puzzle_Resuelto_BoundBox = new THREE.Box3();
-        Puzzle_Resuelto.position.set(0, 0, 0);
-        Puzzle_Resuelto_BoundBox.setFromObject(Puzzle_Resuelto);
-        scene.add(Puzzle_Resuelto);
+            scene.add(mapa);
+        }, undefined, (err) => console.error("Error mapa:", err));
+
+        // Objetos Meta/Puzzle
+        const Puzzle = new THREE.Mesh(new THREE.BoxGeometry(10, 5, 10), new THREE.MeshPhongMaterial({color:"white"}));
+        const Puzzle_BB = new THREE.Box3();
+        Puzzle.position.set(0, 0, 0);
+        Puzzle_BB.setFromObject(Puzzle);
+        scene.add(Puzzle);
+
+        const Meta = new THREE.Mesh(new THREE.BoxGeometry(10, 5, 10), new THREE.MeshPhongMaterial({color:"white"}));
+        const Meta_BB = new THREE.Box3();
+        Meta.position.set(0, 0, -50);
+        Meta_BB.setFromObject(Meta);
+        scene.add(Meta);
 
         let FIN_DEL_NIVEL = false;
         let Jugador_Victoria = false;
-
-        const Zona_Victoria_Geometry = new THREE.BoxGeometry(10, 5, 10);
-        const Zona_Victoria_Material = new THREE.MeshPhongMaterial({ color: "white" });
-        const Zona_Victoria = new THREE.Mesh(Zona_Victoria_Geometry, Zona_Victoria_Material);
-        const Zona_Victoria_BoundBox = new THREE.Box3();
-        Zona_Victoria.position.set(0, 0, -50);
-        Zona_Victoria_BoundBox.setFromObject(Zona_Victoria);
-        scene.add(Zona_Victoria);
-        
-        const Habitacion_1 = new Cuartos(0,0,0,Jugador1_BoundBox, "./uv_texture.jpg", "./temp_puerta.jpg");
-        Habitacion_1.Construir_Cuarto();
-        
         let Cambio_De_Mapa = false;
 
-        function checkCollisions() {
-            if(Zona_Victoria_BoundBox.intersectsBox(Jugador1_BoundBox)){
-                Zona_Victoria.material.color = new THREE.Color("black");
-                FIN_DEL_NIVEL = true;
-                Jugador_Victoria = true;
-            }
-            else{
-                Zona_Victoria.material.color = new THREE.Color("white");
-            }
+        const habitacion = new Cuartos(0, 0, 0, Jugador1_BB, "./uv_texture.jpg", "./temp_puerta.jpg");
+        habitacion.Construir_Cuarto();
 
-            if(Puzzle_Resuelto_BoundBox.intersectsBox(Jugador1_BoundBox)){
-                Habitacion_1.Cuarto_Terminado = true;
-            }
-        }
-
-        function Nivel_Fue_Ganado(){
-            if(Cambio_De_Mapa == false){
-                location.href = 'GAMEOVER_win.html';
-                Cambio_De_Mapa = true;
-            }
-        }
-
-        function Nivel_Fue_Perdido(){
-            if(Cambio_De_Mapa == false){
-                location.href = 'GAMEOVER_LOSE.html';
-                Cambio_De_Mapa = true;
-            }
-        }
-
+        // ==========================================
+        // 6. LOGICA DE JUEGO
+        // ==========================================
         const keyboard = {};
-        document.addEventListener('keydown', (event) => { keyboard[event.code] = true; });
-        document.addEventListener('keyup', (event) => { keyboard[event.code] = false; });
+        document.addEventListener('keydown', (e) => { keyboard[e.code] = true; });
+        document.addEventListener('keyup', (e) => { keyboard[e.code] = false; });
 
-        // --- FÍSICAS MEJORADAS (5 Rayos) ---
+        function spawnPowerUp() {
+            const tipos = ['timeSlow', 'timeMinus', 'timePlus'];
+            const tipo = tipos[Math.floor(Math.random() * tipos.length)];
+            
+            if (!powerUpModels[tipo]) {
+                console.log("Intentando spawnear, pero el modelo " + tipo + " aun no carga.");
+                return; 
+            }
+
+            const p = powerUpModels[tipo].clone();
+            const rx = (Math.random() * 40) - 20; 
+            const rz = (Math.random() * 40) - 20;
+
+            // CAMBIO AQUÍ: Subimos Y a 50
+            const origen = new THREE.Vector3(rx, 50, rz);
+            
+            raycasterSuelo.set(origen, vectorAbajo);
+            const hits = raycasterSuelo.intersectObjects(terrenoMeshes, true);
+
+            if (hits.length > 0) {
+                p.position.set(rx, hits[0].point.y + 2.0, rz); // +2.0 para que flote bien visible
+                p.userData = { tipo: tipo, rotSpeed: 2.0 };
+                scene.add(p);
+                powerUpsActivos.push(p);
+                console.log("¡PowerUp APARECIÓ en el mapa!"); // <--- MENSAJE EN CONSOLA
+            } else {
+                console.log("Raycast falló: No se encontró suelo debajo de x:" + rx + " z:" + rz);
+            }
+        }
+
+        function efectoVisual(id) {
+            const el = document.getElementById(id);
+            if(el) { el.style.opacity = "0.3"; setTimeout(() => el.style.opacity = "0", 500); }
+        }
+
+        function checkPowerUpCollisions() {
+            for (let i = powerUpsActivos.length - 1; i >= 0; i--) {
+                const p = powerUpsActivos[i];
+                const pBox = new THREE.Box3().setFromObject(p);
+                if (pBox.intersectsBox(Jugador1_BB)) {
+                    const t = p.userData.tipo;
+                    if (t === 'timeSlow') { tiempoScale = 0.5; slowTimeTimer = 10.0; efectoVisual('slowTimeEffect'); }
+                    else if (t === 'timeMinus') { tiempoTranscurrido = Math.max(0, tiempoTranscurrido - 3); efectoVisual('goodEffect'); }
+                    else if (t === 'timePlus') { tiempoTranscurrido += 5; efectoVisual('badEffect'); }
+                    
+                    scene.remove(p);
+                    powerUpsActivos.splice(i, 1);
+                }
+            }
+        }
+
         function aplicarFisicas(delta) {
             if (!Jugador1 || terrenoMeshes.length === 0) return;
-
-            const offsets = [
-                new THREE.Vector3(0, 0, 0),      
-                new THREE.Vector3(0, 0, 1),      
-                new THREE.Vector3(0, 0, -1),     
-                new THREE.Vector3(0.5, 0, 0),    
-                new THREE.Vector3(-0.5, 0, 0)    
-            ];
-
-            let sueloDetectado = false;
+            const offsets = [new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,1), new THREE.Vector3(0,0,-1), new THREE.Vector3(0.5,0,0), new THREE.Vector3(-0.5,0,0)];
+            let sueloDetectado = false; 
             let alturaSuelo = -99999;
 
-            for (let i = 0; i < offsets.length; i++) {
-                const origenRayo = Jugador1.position.clone().add(offsets[i]);
-                origenRayo.y += 5.0; 
-                
-                raycasterSuelo.set(origenRayo, vectorAbajo);
-                const intersecciones = raycasterSuelo.intersectObjects(terrenoMeshes, true);
-
-                if (intersecciones.length > 0) {
-                    const hit = intersecciones[0];
-                    if (hit.distance < 6.0) {
-                        if (hit.point.y > alturaSuelo) {
-                            alturaSuelo = hit.point.y;
-                            sueloDetectado = true;
-                        }
+            for (let off of offsets) {
+                const origen = Jugador1.position.clone().add(off);
+                origen.y += 5.0;
+                raycasterSuelo.set(origen, vectorAbajo);
+                const hits = raycasterSuelo.intersectObjects(terrenoMeshes, true);
+                if (hits.length > 0 && hits[0].distance < 6.0) {
+                    if (hits[0].point.y > alturaSuelo) {
+                        alturaSuelo = hits[0].point.y; sueloDetectado = true;
                     }
                 }
             }
 
             if (sueloDetectado) {
                 if (velocidadVertical <= 0) {
-                    enSuelo = true;
-                    velocidadVertical = 0; 
-                    if (Math.abs(Jugador1.position.y - alturaSuelo) < 2.0) {
-                        Jugador1.position.y = alturaSuelo;
-                    }
+                    enSuelo = true; velocidadVertical = 0;
+                    if (Math.abs(Jugador1.position.y - alturaSuelo) < 2.0) Jugador1.position.y = alturaSuelo;
                 } else {
-                    enSuelo = false;
-                    velocidadVertical += gravedad * delta; 
-                    Jugador1.position.y += velocidadVertical * delta; 
+                    enSuelo = false; velocidadVertical += gravedad * delta; Jugador1.position.y += velocidadVertical * delta;
                 }
             } else {
-                enSuelo = false;
-                velocidadVertical += gravedad * delta; 
-                Jugador1.position.y += velocidadVertical * delta; 
+                enSuelo = false; velocidadVertical += gravedad * delta; Jugador1.position.y += velocidadVertical * delta;
             }
+            if (Jugador1.position.y < -300) { FIN_DEL_NIVEL = true; Jugador_Victoria = false; }
+        }
 
-            if (Jugador1.position.y < -300) {
-                FIN_DEL_NIVEL = true;
-                 Jugador_Victoria = false; 
-            }
+        function ajustarAlturaSerpiente() {
+            if (!Serpiente || terrenoMeshes.length === 0) return;
+            const origen = Serpiente.position.clone(); origen.y += 5.0;
+            raycasterSuelo.set(origen, vectorAbajo);
+            const hits = raycasterSuelo.intersectObjects(terrenoMeshes, true);
+            if (hits.length > 0) Serpiente.position.y = hits[0].point.y;
         }
 
         function animate() {
             requestAnimationFrame(animate);
+            if (juegoPausado) { renderer.render(scene, camera); return; }
 
-            // --- LÓGICA DE PAUSA ---
-            if (juegoPausado) {
-                renderer.render(scene, camera);
-                return; // Detiene la actualización del juego
-            }
-
-            const delta = clock.getDelta();
-
+            const deltaReal = clock.getDelta();
+            
             if (FIN_DEL_NIVEL) {
                 Set_NivelActual();
-                if (Jugador_Victoria == true) Nivel_Fue_Ganado();
-                else Nivel_Fue_Perdido();
+                if(!Cambio_De_Mapa) {
+                    location.href = Jugador_Victoria ? 'GAMEOVER_win.html' : 'GAMEOVER_LOSE.html';
+                    Cambio_De_Mapa = true;
+                }
             } else {
+                // Tiempo
+                if (slowTimeTimer > 0) { tiempoScale = 0.5; slowTimeTimer -= deltaReal; } else { tiempoScale = 1.0; }
+                tiempoTranscurrido += deltaReal * tiempoScale;
+                
+                // UI Tiempo
+                const m = Math.floor(tiempoTranscurrido / 60);
+                const s = Math.floor(tiempoTranscurrido % 60);
+                const timerEl = document.getElementById('gameTimer');
+                if(timerEl) {
+                    timerEl.innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+                    timerEl.style.color = tiempoScale < 1 ? "cyan" : "white";
+                }
+
+                // Spawner
+                spawnTimer += deltaReal;
+                if (spawnTimer > SPAWN_INTERVAL) { spawnPowerUp(); spawnTimer = 0; }
+                powerUpsActivos.forEach(p => p.rotation.y += deltaReal * 2);
+
+                // Serpiente
+                if (Serpiente && Jugador1) {
+                    ajustarAlturaSerpiente();
+                    const dir = new THREE.Vector3().subVectors(Jugador1.position, Serpiente.position);
+                    dir.y = 0; dir.normalize();
+                    Serpiente.position.addScaledVector(dir, Serpiente_Velocidad);
+                    Serpiente.lookAt(Jugador1.position.x, Serpiente.position.y, Jugador1.position.z);
+                    if (Serpiente_Mixer) Serpiente_Mixer.update(deltaReal);
+
+                    Serpiente_BB.setFromObject(Serpiente);
+                    if (Serpiente_BB.intersectsBox(Jugador1_BB) && !Serpiente_Cooldown) {
+                        console.log("Mordida");
+                        tiempoTranscurrido += 5.0;
+                        efectoVisual('damageEffect');
+                        Serpiente_Cooldown = true;
+                        setTimeout(() => Serpiente_Cooldown = false, 2000);
+                    }
+                }
+
+                // Jugador
                 if (Jugador1) {
-                    Jugador1_BoundBox.setFromObject(Jugador1);
-                    Jugador1_Posicion_Anterior.copy(Jugador1.position);
+                    Jugador1_BB.setFromObject(Jugador1);
+                    Jugador1_PosAnterior.copy(Jugador1.position);
 
-                    // DEBUG
-                    const infoDiv = document.getElementById('debugInfo');
-                    if (infoDiv) {
-                        infoDiv.innerText = `X: ${Jugador1.position.x.toFixed(2)} | Y: ${Jugador1.position.y.toFixed(2)} | Z: ${Jugador1.position.z.toFixed(2)}`;
-                    }
+                    // Debug UI
+                    const debugEl = document.getElementById('debugInfo');
+                    if(debugEl) debugEl.innerText = `X: ${Jugador1.position.x.toFixed(2)} | Y: ${Jugador1.position.y.toFixed(2)} | Z: ${Jugador1.position.z.toFixed(2)}`;
 
-                    // SALTO
-                    if (keyboard['Space'] && enSuelo) {
-                        velocidadVertical = fuerzaSalto;
-                        enSuelo = false; 
-                    }
+                    if (keyboard['Space'] && enSuelo) { velocidadVertical = fuerzaSalto; enSuelo = false; }
 
-                    // FÍSICAS
-                    aplicarFisicas(delta);
+                    aplicarFisicas(deltaReal);
 
-                    // MOVIMIENTO
-                    const moveSpeed = 1.0;
-                    
-                    const camForward = new THREE.Vector3();
-                    camera.getWorldDirection(camForward);
-                    camForward.y = 0;
-                    camForward.normalize();
+                    const moveSpeed = 0.5;
+                    const camFwd = new THREE.Vector3(); camera.getWorldDirection(camFwd); camFwd.y = 0; camFwd.normalize();
+                    const camRight = new THREE.Vector3(); camRight.crossVectors(camFwd, new THREE.Vector3(0, 1, 0));
+                    const dir = new THREE.Vector3();
 
-                    const camRight = new THREE.Vector3();
-                    camRight.crossVectors(camForward, new THREE.Vector3(0, 1, 0));
+                    if (keyboard['KeyW']) dir.add(camFwd);
+                    if (keyboard['KeyS']) dir.sub(camFwd);
+                    if (keyboard['KeyD']) dir.add(camRight);
+                    if (keyboard['KeyA']) dir.sub(camRight);
 
-                    const direction = new THREE.Vector3(0, 0, 0);
-
-                    if (keyboard['KeyW']) direction.add(camForward);
-                    if (keyboard['KeyS']) direction.sub(camForward);
-                    if (keyboard['KeyD']) direction.add(camRight);
-                    if (keyboard['KeyA']) direction.sub(camRight);
-
-                    if (direction.lengthSq() > 0) {
-                        direction.normalize();
-                        Jugador1.position.addScaledVector(direction, moveSpeed);
-
-                        const targetRotation = new THREE.Quaternion();
-                        const rotationMatrix = new THREE.Matrix4();
-                        rotationMatrix.lookAt(direction, new THREE.Vector3(0,0,0), new THREE.Vector3(0,1,0));
-                        targetRotation.setFromRotationMatrix(rotationMatrix);
-                        Jugador1.quaternion.slerp(targetRotation, 15 * delta);
-                        
-                        if (enSuelo && Jugador1_Action && !Jugador1_Action.isRunning()) {
-                            Jugador1_Action.play();
-                        }
-                        if(Jugador1_Mixer) Jugador1_Mixer.update(delta);
-
+                    if (dir.lengthSq() > 0) {
+                        dir.normalize();
+                        Jugador1.position.addScaledVector(dir, moveSpeed);
+                        const q = new THREE.Quaternion();
+                        const m = new THREE.Matrix4().lookAt(dir, new THREE.Vector3(0,0,0), new THREE.Vector3(0,1,0));
+                        q.setFromRotationMatrix(m);
+                        Jugador1.quaternion.slerp(q, 15 * deltaReal);
+                        if (enSuelo && Jugador1_Action && !Jugador1_Action.isRunning()) Jugador1_Action.play();
+                        if(Jugador1_Mixer) Jugador1_Mixer.update(deltaReal);
                     } else {
-                        if (Jugador1_Action && Jugador1_Action.isRunning()) {
-                            Jugador1_Action.stop();
-                        }
+                        if (Jugador1_Action && Jugador1_Action.isRunning()) Jugador1_Action.stop();
                     }
 
-                    Jugador1_BoundBox.setFromObject(Jugador1);
-                    box.update();
+                    Jugador1_BB.setFromObject(Jugador1);
+                    if(boxHelper) boxHelper.update();
+                    
+                    checkPowerUpCollisions();
                 }
 
-                checkCollisions();
-                Habitacion_1.Colisiones();
-
-                if (Habitacion_1.Colision_Con_Jugador == true && Jugador1) {
-                    const currentY = Jugador1.position.y;
-                    Jugador1.position.copy(Jugador1_Posicion_Anterior);
-                    Jugador1.position.y = currentY;
+                // Colisiones Escenario
+                habitacion.Colisiones();
+                if (habitacion.colision && Jugador1) {
+                    Jugador1.position.copy(Jugador1_PosAnterior);
                 }
 
+                // Checar Meta
+                if(Meta_BB.intersectsBox(Jugador1_BB)) { Meta.material.color.set("black"); FIN_DEL_NIVEL = true; Jugador_Victoria = true; }
+                else Meta.material.color.set("white");
+
+                if(Puzzle_BB.intersectsBox(Jugador1_BB)) habitacion.Cuarto_Terminado = true;
+
+                // Camara
                 if (Jugador1) {
                     controls.target.copy(Jugador1.position).add(new THREE.Vector3(0, 10, 0));
                     controls.update();
                 }
             }
 
-            if (Habitacion_1.Cuarto_Terminado == true) {
-                Habitacion_1.Wall3_Puerta1.position.y = -20;
-                Habitacion_1.Wall7_Puerta2.position.y = -30;
-            } else {
-                Habitacion_1.Wall3_Puerta1.position.y = 10;
-                Habitacion_1.Wall7_Puerta2.position.y = -30;
-            }
-
+            habitacion.AnimarPuertas(habitacion.Cuarto_Terminado);
             renderer.render(scene, camera);
         }
 

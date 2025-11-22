@@ -24,6 +24,22 @@
             border-radius: 5px;
             pointer-events: none;
         }
+        #gameTimer {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #ffffff;
+            padding: 10px 20px;
+            font-family: monospace;
+            font-size: 24px;
+            font-weight: bold;
+            z-index: 2000;
+            border-radius: 10px;
+            pointer-events: none;
+            border: 2px solid #ffffff;
+        }
     </style>
 </head>
 
@@ -33,6 +49,7 @@
     </audio>
 
     <div id="debugInfo">Posición: Cargando...</div>
+    <div id="gameTimer">00:00</div>
 
     <i class="Cofre_Clase"></i>
     <div class="Opciones-container">
@@ -71,10 +88,11 @@
         import { OrbitControls } from "./OrbitControls.js";
         import { GLTFLoader } from "./GLTFLoader.js";
 
-        // --- PAUSA ---
+        // --- VARIABLES GLOBALES ---
         let juegoPausado = false;
+        let tiempoTranscurrido = 0;
 
-        // --- MENU Y PAUSA ---
+        // --- 1. MENU Y PAUSA ---
         const toggleButton = document.getElementById('Menu_icono');
         const targetElements = document.querySelectorAll('.opcion-item');
 
@@ -88,7 +106,7 @@
             }
         });
 
-        // --- AUDIO ---
+        // --- 2. AUDIO ---
         const audio = document.getElementById('musicaFondo');
         const sliderVolumen = document.getElementById('volume-slider');
         const checkMusica = document.querySelector('.checkbox-control input');
@@ -132,7 +150,7 @@
             }
         });
 
-        // --- CLASE CUARTOS ---
+        // --- 3. CLASES Y JUEGO ---
         class Cuartos{
             constructor(positionX, positionY, positionZ, Player_BB, mat_Paredes, mat_Puertas){
                 this.positionX = positionX;
@@ -268,22 +286,20 @@
         let Jugador1_BoundBox = new THREE.Box3();
         let box;
         
-        // FISICAS
         let terrenoMeshes = [];
         const raycasterSuelo = new THREE.Raycaster();
         const vectorAbajo = new THREE.Vector3(0, -1, 0);
         
         let velocidadVertical = 0;    
         const gravedad = -10.0;       
-        const fuerzaSalto = 6.0;
+        const fuerzaSalto = 5.0;
         let enSuelo = false;          
 
-        // CARGA JUGADOR
         loader.load('Personaje/personajeee.glb', (gltf) => {
             Jugador1 = gltf.scene;        
             Jugador1.traverse(child => { if (child.isMesh) child.castShadow = true; });
             Jugador1.scale.set(2, 2, 2);
-            Jugador1.position.set(10, 5, 10); // Posicion Inicial Nivel 2
+            Jugador1.position.set(10, 5, 10); 
 
             scene.add(Jugador1);
             
@@ -297,7 +313,6 @@
             }
         }, undefined, (error) => console.error(error));
         
-        // CARGA MAPA CUEVA
         loader.load('cueva_con_tesoro/crystal_caverns.glb', (gltf) => {
             const mapaCueva = gltf.scene;
             mapaCueva.scale.set(12, 12, 12); 
@@ -369,7 +384,6 @@
         document.addEventListener('keydown', (event) => { keyboard[event.code] = true; });
         document.addEventListener('keyup', (event) => { keyboard[event.code] = false; });
 
-        // --- FÍSICAS 5 RAYOS ---
         function aplicarFisicas(delta) {
             if (!Jugador1 || terrenoMeshes.length === 0) return;
 
@@ -429,10 +443,10 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // --- PAUSA ---
+            // PAUSA
             if (juegoPausado) {
                 renderer.render(scene, camera);
-                return;
+                return; 
             }
 
             const delta = clock.getDelta();
@@ -443,6 +457,15 @@
                 else Nivel_Fue_Perdido();
             }
             else{
+                // CRONOMETRO
+                tiempoTranscurrido += delta;
+                const minutos = Math.floor(tiempoTranscurrido / 60);
+                const segundos = Math.floor(tiempoTranscurrido % 60);
+                const timerDiv = document.getElementById('gameTimer');
+                if(timerDiv) {
+                    timerDiv.innerText = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
+                }
+
                 if(Jugador1) {
                     Jugador1_BoundBox.setFromObject(Jugador1);
                     Jugador1_Posicion_Anterior.copy(Jugador1.position);
